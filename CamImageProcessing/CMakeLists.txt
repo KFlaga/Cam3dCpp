@@ -1,7 +1,7 @@
-set(SOURCES_CamImageProcessing
+# set(SOURCES_CamImageProcessing
 	
-)
+# )
 
-add_library(LIBRARIES_DIR/CamImageProcessing.a
-	SOURCES_CamImageProcessing
-	)
+# add_library(CamImageProcessing
+# 	SOURCES_CamImageProcessing
+# 	)

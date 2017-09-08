@@ -1,18 +1,21 @@
-
 find_package(GTest REQUIRED)
-#include gtest
+include_directories(${GTEST_INCLUDE_DIRS})
 
 set(SOURCES_CamTests 
-	TestBitWord.cpp
+    TestBitWord.cpp
+    TestVector2.cpp
+    TestCensus.cpp
+    TestSgmPaths.cpp
+#    to_remove.cpp
 )
 
-add_executable(BINARIES_DIR/tests 
-	gtestmain.cpp
-	SOURCES_CamTests
-	)
+add_executable(tests 
+    gtestmain.cpp
+    ${SOURCES_CamTests}
+    )
 
-target_link_libraries(BINARIES_DIR/tests 
-	${GTEST_BOTH_LIBRARIES}
-	LIBRARIES_DIR/CamCommon.a
-	LIBRARIES_DIR/CamImageProcessing.a
+target_link_libraries(tests 
+    ${GTEST_BOTH_LIBRARIES}
+    # CamCommon
+    # CamImageProcessing
 )

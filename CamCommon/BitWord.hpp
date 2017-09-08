@@ -1,7 +1,8 @@
 #pragma once
 
-#include "PreReqs.h"
+#include "PreReqs.hpp"
 #include <algorithm>
+#include <cstring>
 
 namespace cam3d
 {
@@ -15,7 +16,7 @@ namespace cam3d
 			static uint32_t wordBits[wordBitsSize];
 			int x;
 			uint32_t count = 0u;
-			for (int i = 0; i < wordBitsSize; ++i)
+			for (size_t i = 0; i < wordBitsSize; ++i)
 			{
 				x = i;
 				for (count = 0u; x > 0; ++count)
@@ -38,13 +39,13 @@ namespace cam3d
 	{
 		HammingLookup64() = delete;
 
-		static constexpr uint64_t wordBitsSize = ((uint64_t)std::numeric_limits<uint16_t>::max()) + 1;
+		static constexpr size_t wordBitsSize = ((uint64_t)std::numeric_limits<uint16_t>::max()) + 1;
 		static uint64_t* createWordBitsLut()
 		{
 			static uint64_t wordBits[wordBitsSize];
 			int64_t x;
 			uint64_t count = 0u;
-			for (uint64_t i = 0u; i < wordBitsSize; ++i)
+			for (size_t i = 0u; i < wordBitsSize; ++i)
 			{
 				x = i;
 				for (count = 0u; x > 0; ++count)
@@ -66,7 +67,8 @@ namespace cam3d
 	template<size_t length>
 	struct BitWord32
 	{
-		static constexpr size_t wordLength = length;
+		static constexpr size_t lengthInWords = length;
+		static constexpr size_t bitSizeOfWord = 32;
 		typedef uint32_t uintType;
 		
 		uint32_t bytes[length];
@@ -82,35 +84,36 @@ namespace cam3d
 		}
 
 	private:
-		template<size_t i>
+		template<size_t i, bool = false>
 		struct helper
 		{
-			static uint32_t getOnesCount(uint32_t* b1, uint32_t* b2)
+            static uint32_t getOnesCount(const uint32_t* b1, const uint32_t* b2)
 			{
 				return HammingLookup32::getOnesCount(b1[i] ^ b2[i]) + helper<i + 1>::getOnesCount(b1, b2);
 			}
-		};
-
-		template<>
-		struct helper<length>
+        };
+        
+		template<bool dummy>
+		struct helper<length, dummy>
 		{
-			static uint32_t getOnesCount(uint32_t* b1, uint32_t* b2)
+            static uint32_t getOnesCount(const uint32_t* , const uint32_t* )
 			{
 				return 0;
 			}
 		};
 
 	public:
-		inline uint32_t getHammingDistance(BitWord32& bw)
+        inline uint32_t getHammingDistance(const BitWord32& bw) const
 		{
 			return helper<0>::getOnesCount(bytes, bw.bytes);
 		}
-	};
+    };
 
 	template<size_t length>
 	struct BitWord64
 	{
-		static constexpr size_t wordLength = length;
+		static constexpr size_t lengthInWords = length;
+		static constexpr size_t bitSizeOfWord = 64;
 		typedef uint64_t uintType;
 		
 		uint64_t bytes[length];
@@ -126,28 +129,28 @@ namespace cam3d
 		}
 
 	private:
-		template<size_t i>
+		template<size_t i, bool = false>
 		struct helper
 		{
-			static uint64_t getOnesCount(uint64_t* b1, uint64_t* b2)
+            static uint64_t getOnesCount(const uint64_t* b1, const uint64_t* b2)
 			{
 				return HammingLookup64::getOnesCount(b1[i] ^ b2[i]) + helper<i + 1>::getOnesCount(b1, b2);
 			}
-		};
-
-		template<>
-		struct helper<length>
+        };
+        
+		template<bool dummy>
+		struct helper<length, dummy>
 		{
-			static uint64_t getOnesCount(uint64_t* b1, uint64_t* b2)
+            static uint64_t getOnesCount(const uint64_t* , const uint64_t* )
 			{
 				return 0;
 			}
 		};
 
 	public:
-		inline uint64_t getHammingDistance(BitWord64& bw)
+        inline uint64_t getHammingDistance(const BitWord64& bw) const
 		{
 			return helper<0>::getOnesCount(bytes, bw.bytes);
 		}
-	};
+    };
 }

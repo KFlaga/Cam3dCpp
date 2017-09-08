@@ -1,7 +1,8 @@
-set(SOURCES_CamCommon
-	
-)
+# set(SOURCES_CamCommon
+    
+# )
 
-add_library(LIBRARIES_DIR/CamCommon.a
-	SOURCES_CamCommon
-	)
+# add_library(CamCommon
+#     STATIC
+#     SOURCES_CamCommon
+#     )

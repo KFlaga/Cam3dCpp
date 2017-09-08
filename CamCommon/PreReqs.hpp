@@ -1,11 +1,12 @@
 #pragma once
 
 #include <stdint.h>
+#include <limits.h>
 #include <string>
 #include <cmath>
 #include <limits>
 
-#if (sizeof(std::intptr_t) == 8)
+#if defined(__x86_64__) || defined(_M_X64)
 #define _64bit
 #else
 #define _32bit
@@ -13,7 +14,7 @@
 
 namespace cam3d
 {
-#if _64bit
+#if defined(_64bit)
 	typedef int64_t Int;
 	typedef uint64_t UInt;
 #else
@@ -30,5 +31,5 @@ namespace cam3d
 	inline bool notEquals(double a, double b, double delta = 1e-6)
 	{
 		return std::abs(a - b) > delta;
-	}
+    }
 }

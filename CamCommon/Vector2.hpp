@@ -1,6 +1,6 @@
 #pragma once
 
-#include "PreReqs.h"
+#include "PreReqs.hpp"
 
 namespace cam3d
 {
@@ -26,29 +26,29 @@ namespace cam3d
 			y += a.y;
 		}
 
-		Vector2& operator*=(double s)
+		Vector2& operator*=(T s)
 		{
 			x *= s;
 			y *= s;
 		}
 
-		Vector2& operator/=(double s)
+		Vector2& operator/=(T s)
 		{
 			x /= s;
 			y /= s;
 		}
 
-		double dot(Vector2 v)
+        constexpr double dot(const Vector2 v)
 		{
 			return x * v.x + y * v.y;
 		}
 
-		double cross(Vector2 v)
+        constexpr double cross(const Vector2 v)
 		{
 			return x * v.y - y * v.x;
 		}
 
-		double lengthSquared()
+        constexpr double lengthSquared()
 		{
 			return x * x + y * y;
 		}
@@ -68,59 +68,59 @@ namespace cam3d
 			}
 		}
 
-		double distanceToSquared(Vector2 v)
+        constexpr double distanceToSquared(const Vector2 v)
 		{
 			return (x - v.x) * (x - v.x) + (y - v.y) * (y - v.y);
 		}
 
-		double distanceTo(Vector2 v)
+        double distanceTo(const Vector2 v)
 		{
 			return std::sqrt(distanceToSquared(v));
 		}
 
 		// Returns value in radians
-		double angleTo(Vector2 v)
+        double angleTo(const Vector2 v)
 		{
 			return std::asin(sinusTo(v));
 		}
 
 		// Returns value in radians. Assumes both vector are normalized
-		double angleToNormalized(Vector2 v)
+        double angleToNormalized(const Vector2 v)
 		{
 			return std::asin(cross(v));
 		}
 
 		// Returns sinus of angle to v, value in radians
-		double sinusTo(Vector2 v)
+        double sinusTo(const Vector2 v)
 		{
 			return cross(v) / std::sqrt(lengthSquared() * v.lengthSquared());
 		}
 
 		// Returns sinus of angle to v, value in radians. Assumes both vector are normalized
-		public double sinusToNormalized(Vector2 v)
+        double sinusToNormalized(const Vector2 v)
 		{
 			return cross(v);
 		}
 		// Returns cosinus of angle to v, value in radians
-		public double cosinusTo(Vector2 v)
+        double cosinusTo(const Vector2 v)
 		{
 			return dot(v) / std::sqrt(lengthSquared() * v.lengthSquared());
 		}
 
 		// Returns cosinus of angle to v, value in radians. Assumes both vector are normalized
-		public double cosinusToNormalized(Vector2 v)
+        double cosinusToNormalized(const Vector2 v)
 		{
 			return dot(v);
 		}
 
 		template<typename T2>
-		operator Vector2<T2>() const
+        constexpr operator Vector2<T2>() const
 		{
-			return Vector2<T2>{x, y};
+			return Vector2<T2>{ static_cast<T2>(x), static_cast<T2>(y) };
 		}
 
 		template<typename T2>
-		constexpr Vector2(const Vector2<T2>& v) : x{v.x}, y{v.y} { }
+		constexpr Vector2(const Vector2<T2>& v) : x{static_cast<T>(v.x)}, y{static_cast<T>(v.y)} { }
 	};
 
 	template<typename T>
@@ -142,7 +142,7 @@ namespace cam3d
 	}
 
 	template<typename T>
-	constexpr Vector2<T> operator*(Vector2<T> a, Vector2<T> b)
+	constexpr Vector2<T> operator/(Vector2<T> a, Vector2<T> b)
 	{
 		return Vector2<T>{ a.x / b.x, a.y / b.y };
 	}
@@ -171,32 +171,54 @@ namespace cam3d
 		return Vector2<T>{ a.x / s, a.y / s };
 	}
 
-	template<typename T>
-	constexpr bool operator==(Vector2<T> a, Vector2<T> b)
+	template<typename T1, typename T2>
+	constexpr bool operator==(Vector2<T1> a, Vector2<T2> b)
 	{
 		return a.x == b.x && a.y == b.y;
 	}
 
-	template<typename T>
-	constexpr bool operator!=(Vector2<T> a, Vector2<T> b)
+	template<typename T1, typename T2>
+	constexpr bool operator!=(Vector2<T1> a, Vector2<T2> b)
 	{
 		return a.x != b.x && a.y != b.y;
 	}
 
-	template<typename T>
-	constexpr bool operator>(Vector2<T> a, Vector2<T> b)
+	template<typename T1, typename T2>
+	constexpr bool operator>(Vector2<T1> a, Vector2<T2> b)
 	{
 		return a.lengthSquared() > b.lengthSquared();
 	}
 
-	template<typename T>
-	constexpr bool operator<(Vector2<T> a, Vector2<T> b)
+	template<typename T1, typename T2>
+	constexpr bool operator<(Vector2<T1> a, Vector2<T2> b)
 	{
 		return a.lengthSquared() < b.lengthSquared();
 	}
 
-	typedef Vector2<Int> Vector2i;
-	typedef Vector2<UInt> Vector2u;
-	typedef Vector2<double> Vector2f;
+    typedef Vector2<int> Vector2i;
+    typedef Vector2<unsigned int> Vector2u;
+    typedef Vector2<double> Vector2f;
+
+    struct Point2 : public Vector2i
+    {
+        constexpr Point2() : Vector2i{} { }
+        constexpr Point2(Int y, Int x) : Vector2i(x, y) { }
+        constexpr Point2(const Vector2i& v) : Vector2i(v) { }
+
+        constexpr operator const Vector2i&() const
+        {
+            return *this;
+        }
+
+        constexpr operator Vector2i() const
+        {
+            return Vector2i{x, y};
+        }
+
+        constexpr operator Vector2i&()
+        {
+            return *this;
+        }
+    };
 }
 
