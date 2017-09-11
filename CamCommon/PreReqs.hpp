@@ -32,4 +32,10 @@ namespace cam3d
 	{
 		return std::abs(a - b) > delta;
     }
+
+    namespace global
+    {
+        constexpr int imageRows = 480;
+        constexpr int imageCols = 640;
+    }
 }

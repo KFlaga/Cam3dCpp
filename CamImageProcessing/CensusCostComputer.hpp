@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CamCommon/Matrix.hpp>
+#include <CamCommon/Array2d.hpp>
 #include <CamImageProcessing/BorderFunction.hpp>
 
 namespace cam3d
@@ -10,7 +10,7 @@ class CensusCostComputer
 {
 public:
     using uint = typename BitWord::uintType;
-    using BitWordMatrix = Matrix<BitWord, Image::Matrix::rows, Image::Matrix::cols>;
+    using BitWordMatrix = Array2d<BitWord, Image::Matrix::rows, Image::Matrix::cols>;
 
 private:
     int borderWidth;

@@ -10,7 +10,7 @@ namespace cam3d
     // Represent static 2d array in row-major order
     // TODO: change name to Array2d
     template<typename T, int rows_, int cols_>
-    class Matrix
+    class Array2d
     {
     protected:
 #ifdef _DEBUG
@@ -23,7 +23,7 @@ namespace cam3d
         static constexpr int cols = cols_;
 
 #ifdef _DEBUG
-        Matrix()
+        Array2d()
         { 
             data.resize(rows);
             for(int r = 0; r < rows; ++r)

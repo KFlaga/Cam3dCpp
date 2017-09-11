@@ -1,208 +1,253 @@
 #pragma once
 
 #include <CamCommon/Vector2.hpp>
-#include <CamCommon/Matrix.hpp>
+#include <CamCommon/Array2d.hpp>
+#include <CamCommon/Array3d.hpp>
 #include <CamImageProcessing/CensusCostComputer.hpp>
 #include <CamImageProcessing/GreyScaleImage.hpp>
+#include <CamImageProcessing/SgmPathsManager.hpp>
 
 namespace cam3d
 {
 
 using Disparity = double;
 template<int rows, int cols>
-using DisparityMap = Matrix<Disparity, rows, cols>;
-
-enum class PathDirection : int
-{
-    PosX, NegX, PosY, NegY,
-    PosX_PosY, NegX_PosY, PosX_NegY, NegX_NegY,
-    PosX2_PosY, NegX2_PosY, PosX2_NegY, NegX2_NegY,
-    PosX_PosY2, NegX_PosY2, PosX_NegY2, NegX_NegY2,
-};
-
-class SgmPath
-{
-public:
-    int imageWidth;
-    int imageHeight;
-    int length;
-
-    Point2 startPixel;
-    Point2 currentPixel;
-    int currentIndex;
-    Point2 previousPixel;
-    int previousIndex;
-
-    bool haveNextPixel()
-    {
-        return currentIndex < length - 1;
-    }
-
-    double* lastStepCosts; // Needs to be allocated externally
-
-    virtual void init();
-    virtual void next();
-
-    using BorderPixelGetter = Point2(Point2, int, int);
-};
+using DisparityMap = Array2d<Disparity, rows, cols>;
 
 class SgmDisparityComputer;
 
 class SgmCostAggregator
 {
 public:
-    struct DisparityCost
-    {
-        double cost;
-        int disparity;
-    };
-
+    bool isLeftImageBase;
     double lowPenaltyCoeff; // P1 = coeff * MaxCost
     double highPenaltyCoeff; // P2 = coeff * MaxCost * (1 - grad * |Ib - Im|)
     double gradientCoeff;
-    int maxDisparity;
-    int minDisparity;
-    int dispRange;
 
     SgmDisparityComputer* disparityComputer;
+    SgmPathsManager paths;
 
-private:
+public:
     double P1;
     double P2;
 
     static constexpr int rows = 10;
     static constexpr int cols = 10;
-    static constexpr int pathsCount = 16;
-    SgmPath* paths[rows][cols][pathsCount]; // TODO: array3d
-    DisparityCost bestPathsCost[rows][cols][pathsCount];
-    SgmPath::BorderPixelGetter borderPixelGetters[pathsCount];
+    static constexpr int pathsCount = 8;
+    using Image = GreyScaleImage<rows, cols>;
+    using Bitword = BitWord32<8>;
 
-    int pathsIntRun_RightTopDown[8];
-    int pathsIntRun_RightBottomUp[8];
-    int pathsIntRun_LeftTopDown[8];
-    int pathsIntRun_LeftBottomUp[8];
+    CensusCostComputer<Image, Bitword> costComp;
 
-    CensusCostComputer<GreyScaleImage<rows, cols>, BitWord32<8>> costComp;
+    Point2 matched;
 
-    Point2 _matched;
-
-    void createBorderPaths()
+    void computeMatchingCosts()
     {
-        for(int y = 0; x < rows; ++y)
+        P1 = lowPenaltyCoeff * costComp.getMaxCost();
+        P2 = highPenaltyCoeff * costComp.getMaxCost();
+
+        paths.init();
+
+        findCostsTopDown();
+        findCostsBottomUp();
+        findDisparities();
+    }
+
+    int getDispRange(Point2 pixel)
+    {
+        return isLeftImageBase ?
+                    pixel.x :
+                    cols - 1 - pixel.x;
+    }
+
+    double findCost(IntVector2 basePixel, Path path, int d, int bestPrevDisp, double bestPrevCost, int dmax, double prevCost)
+    {
+        double pen0, pen1, pen2;
+
+        pen0 = path.LastStepCosts[d];
+        if(d == 0)
+            pen1 = path.LastStepCosts[d + 1];
+        else if(d > _dispRange - 2)
+            pen1 = prevCost; // path.LastStepCosts[d - 1];
+        else
+            pen1 = Math.Min(path.LastStepCosts[d + 1], prevCost);//  path.LastStepCosts[d - 1]);
+
+        pen2 = double.MaxValue;
+        if(bestPrevDisp < d - 1 || bestPrevDisp > d + 1)
         {
-            for(int x = 0; x < cols; ++x)
+            pen2 = bestPrevCost;
+        }
+        else
+        {
+            for(int dk = 0; dk < d - 1; ++dk)
             {
-                for(int i = 0; i < pathsCount; ++i)
-                {
-                    paths[y][x][i] = nullptr;
-                }
+                pen2 = Math.Min(path.LastStepCosts[dk], pen2);
+            }
+
+            for(int dk = d + 2; dk < dmax - 1; ++dk)
+            {
+                pen2 = Math.Min(path.LastStepCosts[dk], pen2);
             }
         }
 
-        for(int x = 0; x < ImageBase.ColumnCount; ++x)
+        if(basePixel.X >= ImageBase.ColumnCount || matched.X >= ImageBase.ColumnCount ||
+            basePixel.X < 0 || matched.X < 0)
         {
-            createPathsForBorderPixel({0, x});
-            initZeroStep({0, x});
 
-            createPathsForBorderPixel({rows - 1, x});
-            initZeroStep({rows - 1, x});
         }
 
-        for(int y = 1; y < ImageBase.RowCount; ++y)
+        if(Math.Min(pen0, Math.Min(pen1 + _penaltyLow, pen2 + _penaltyHigh * (1.0 - GradientCoeff *
+            Math.Abs(ImageBase[basePixel.Y, basePixel.X] - ImageMatched[matched.Y, matched.X])))) !=
+            Math.Min(
+            pen0, Math.Min(pen1 + _penaltyLow, bestPrevCost + _penaltyHigh * (1.0 - GradientCoeff *
+            Math.Abs(ImageBase[basePixel.Y, basePixel.X] - ImageMatched[matched.Y, matched.X])))))
         {
-            createPathsForBorderPixel({y, 0});
-            initZeroStep({y, 0});
 
-            createPathsForBorderPixel({y, cols - 1});
-            initZeroStep({y, cols - 1});
         }
+
+        //return CostComp.GetCost_Border(basePixel, _matched) + Math.Min(
+        //    pen0, Math.Min(pen1 + _penaltyLow, pen2 + _penaltyHigh * (1.0 - GradientCoeff *
+        //    Math.Abs(ImageBase[basePixel.Y, basePixel.X] - ImageMatched[_matched.Y, _matched.X]))));
+
+
+        double c = CostComp.GetCost_Border(basePixel, matched);
+        return c + Math.Min(
+            pen0, Math.Min(pen1 + _penaltyLow, bestPrevCost + _penaltyHigh * (1.0 - GradientCoeff *
+            Math.Abs(ImageBase[basePixel.Y, basePixel.X] - ImageMatched[matched.Y, matched.X]))));
     }
 
-    void createPathsForBorderPixel(Point2 pixel)
+    double getCost(Point2 pixel, Disparity disp)
     {
-        // Create only those paths which can start on pixel (y,x)
-        if(pixel.x == 0)
-        {
-            paths[pixel.y][pixel.x][PathDirection::PosX] = new Path_Str_XPos();
-        }
-        else if(pixel.x == cols - 1)
-        {
-            paths[pixel.y][pixel.x][PathDirection::NegX] = new Path_Str_XNeg();
-        }
-
-        if(pixel.y == 0)
-        {
-            paths[pixel.y][pixel.x][PathDirection::PosY] = new Path_Str_YPos();
-        }
-        else if(pixel.y == rows - 1)
-        {
-            paths[pixel.y][pixel.x][PathDirection::NegY] = new Path_Str_YNeg();
-        }
-
-        if(pixel.x == 0 || pixel.y == 0)
-        {
-            paths[pixel.y][pixel.x][PathDirection::PosX_PosY] = new Path_Diag_XPosYPos();
-            paths[pixel.y][pixel.x][PathDirection::PosX2_PosY] = new Path_Diag2_X2PosYPos();
-            paths[pixel.y][pixel.x][PathDirection::PosX_PosY2] = new Path_Diag2_XPosY2Pos();
-        }
-        if(pixel.x == cols - 1 || pixel.y == 0)
-        {
-            paths[pixel.y][pixel.x][PathDirection::NegX_PosY] = new Path_Diag_XNegYPos();
-            paths[pixel.y][pixel.x][PathDirection::NegX2_PosY] = new Path_Diag2_X2NegYPos();
-            paths[pixel.y][pixel.x][PathDirection::NegX_PosY2] = new Path_Diag2_XNegY2Pos();
-        }
-        if(pixel.x == 0 || pixel.y == rows - 1)
-        {
-            paths[pixel.y][pixel.x][PathDirection::PosX_NegY] = new Path_Diag_XPosYNeg();
-            paths[pixel.y][pixel.x][PathDirection::PosX2_NegY] = new Path_Diag2_X2PosYNeg();
-            paths[pixel.y][pixel.x][PathDirection::PosX_NegY2] = new Path_Diag2_XPosY2Neg();
-        }
-        if(pixel.x == cols - 1 || pixel.y == rows - 1)
-        {
-            paths[pixel.y][pixel.x][PathDirection::NegX_NegY] = new Path_Diag_XNegYNeg();
-            paths[pixel.y][pixel.x][PathDirection::NegX2_NegY] = new Path_Diag2_X2NegYNeg();
-            paths[pixel.y][pixel.x][PathDirection::NegX_NegY2] = new Path_Diag2_XNegY2Neg();
-        }
+        return getCost(pixel, disp.GetMatchedPixel(pixel));
     }
 
-    void initZeroStep(Point2 borderPixel)
+    double getCost(Point2 basePixel, Point2 matchedPixel)
     {
-        for(int i = 0; i < pathsCount; ++i)
+        matchedPixel.X = Math.Max(0, Math.Min(matchedPixel.X, ImageBase.ColumnCount - 1));
+        matchedPixel.Y = Math.Max(0, Math.Min(matchedPixel.Y, ImageBase.RowCount - 1));
+
+        return CostComp.GetCost_Border(basePixel, matchedPixel);
+    }
+
+    void findCostsTopDown()
+    {
+        int[] paths = IsLeftImageBase ? _pathsInRun_LeftTopDown : _pathsInRun_RightTopDown;
+        // 1st run: start from (0,0) move left/downwards
+        for(int r = 0; r < ImageBase.RowCount; ++r)
         {
-            SgmPath* path = paths[borderPixel.y][borderPixel.x][i];
-            if(path != nullptr)
+            for(int c = 0; c < ImageBase.ColumnCount; ++c)
             {
-                path->imageHeight = rows;
-                path->imageWidth = cols;
-                path->startPixel = borderPixel;
-                path->length = rows + cols;
-                path->lastStepCosts = new double[dispRange + 1];
-                path->init();
+                CurrentPixel.Set(x: c, y: r);
+                matched.Y = CurrentPixel.Y;
 
-                int bestDisp = 0;
-                double bestCost = costComp.getMaxCost() + 1.0;
-                _matched.y = borderPixel.y;
-
-                // If base is right, then for each base pixel, matched one is on the right - disparity is positive
-                int maxDisp = IsLeftImageBase ? path->currentPixel.x : cols - 1 - path->currentPixel.x;
-
-                for(int d = 0; d < maxDisp; ++d)
+                foreach(int pathIdx in paths)
                 {
-                    _matched.x = IsLeftImageBase ? path->currentPixel.x - d : path->currentPixel.x + d;
-                    double cost = costComp.getCostOnBorder(borderPixel, _matched);
-                    path->lastStepCosts[d] = cost;
+                    FindCostsForPath(pathIdx, false);
+                }
+            }
+        }
+    }
 
-                    if(bestCost > cost)
+    void findCostsBottomUp()
+    {
+        int[] paths = IsLeftImageBase ? _pathsInRun_LeftBottomUp : _pathsInRun_RightBottomUp;
+        // 2nd run: start from (rows,cols) move right/upwards
+        for(int r = ImageBase.RowCount - 1; r >= 0; --r)
+        {
+            for(int c = ImageBase.ColumnCount - 1; c >= 0; --c)
+            {
+                CurrentPixel.Set(x: c, y: r);
+                matched.Y = CurrentPixel.Y;
+
+                foreach(int pathIdx in paths)
+                {
+                    FindCostsForPath(pathIdx, true);
+                }
+            }
+        }
+    }
+
+    void findDisparities()
+    {
+        // 3rd run: compute final disparity based on paths' bests
+        // Set disparity to be weighted average of best disparities
+        for(int r = 0; r < ImageBase.RowCount; ++r)
+        {
+            for(int c = 0; c < ImageBase.ColumnCount; ++c)
+            {
+                CurrentPixel.Set(x: c, y: r);
+                matched.Y = CurrentPixel.Y;
+
+                for(int i = 0; i < 16; ++i)
+                {
+                    matched.X = CurrentPixel.X + bestPathsCosts[CurrentPixel.Y, CurrentPixel.X, i].Disparity;
+                    double matchCost = GetCost(CurrentPixel, matched);
+                    DispComp.StoreDisparity(new Disparity()
                     {
-                        bestCost = cost;
-                        bestDisp = d;
-                    }
+                        DX = IsLeftImageBase ? -bestPathsCosts[CurrentPixel.Y, CurrentPixel.X, i].Disparity :
+                          bestPathsCosts[CurrentPixel.Y, CurrentPixel.X, i].Disparity,
+                        DY = 0,
+                        Cost = matchCost
+                    });
                 }
-                _bestPathCosts[path->currentPixel.y][path->currentPixel.x][i] = DisparityCost{bestCost, bestDisp};
+                DispComp.FinalizeForPixel(CurrentPixel);
             }
         }
     }
 
 
+    void findCostsForPath(int pathIdx, bool startedOnZeroRange)
+    {
+        IntVector2 borderPixel = _borderPixelGetters[pathIdx](
+                                        CurrentPixel, ImageBase.RowCount, ImageBase.ColumnCount);
+
+        Path path = _paths[borderPixel.Y, borderPixel.X][pathIdx];
+        if(path.Length <= 0)
+        {
+            bestPathsCosts[path.CurrentPixel.Y, path.CurrentPixel.X, pathIdx] = new DisparityCost(0, 1e12);
+            return;
+        }
+        if(path.CurrentIndex >= path.Length)
+        {
+            //bestPathsCosts[path.CurrentPixel.Y, path.CurrentPixel.X, pathIdx] = new DisparityCost(0, 1e12);
+            return;
+        }
+
+        // If base is right, then for each base pixel, matched one is on the right - disparity is positive
+        int maxDisp = IsLeftImageBase ? path.CurrentPixel.X : ImageBase.ColumnCount - 1 - path.CurrentPixel.X;
+        int bestDisp = 0;
+        double bestCost = double.MaxValue;
+        DisparityCost bestPrev = bestPathsCosts[path.PreviousPixel.Y, path.PreviousPixel.X, pathIdx];
+        double prevCost = double.MaxValue;
+
+        for(int d = 0; d < maxDisp; ++d)
+        {
+            matched.X = IsLeftImageBase ? path.CurrentPixel.X - d : path.CurrentPixel.X + d;
+
+            double cost = FindCost_Rect(path.CurrentPixel, path, d, bestPrev.Disparity, bestPrev.Cost, maxDisp, prevCost);
+            prevCost = path.LastStepCosts[d];
+            path.LastStepCosts[d] = cost;
+
+            // Save best disparity at current path index
+            if(bestCost > cost)
+            {
+                bestCost = cost;
+                bestDisp = d;
+            }
+        }
+        bestPathsCosts[path.CurrentPixel.Y, path.CurrentPixel.X, pathIdx] = new DisparityCost(bestDisp, bestCost);
+
+        if(startedOnZeroRange && maxDisp > 0)
+        {
+            // For disparity greater than max, matched pixel will exceed image dimensions:
+            // L[p, d > dmax-1] = Cost(curPix, maxXPix) + LastCost[dmax-1]
+            // We actualy need only to compute L[p, dmax] as it will be needed in next iteration
+            matched.X = IsLeftImageBase ? 0 : ImageBase.ColumnCount - 1;
+            path.LastStepCosts[maxDisp] = // As LastStepCosts is of size dispRange + 1 we won't exceed max index
+                GetCost(CurrentPixel, matched) + path.LastStepCosts[maxDisp - 1];
+        }
+
+        path.Next();
+    }
 };
 }

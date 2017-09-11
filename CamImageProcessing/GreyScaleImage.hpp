@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CamCommon/Matrix.hpp>
+#include <CamCommon/Array2d.hpp>
 
 namespace cam3d
 {
@@ -8,7 +8,7 @@ template<int rows, int cols>
 class GreyScaleImage
 {
 public:
-    using Matrix = Matrix<double, rows, cols>;
+    using Matrix = Array2d<double, rows, cols>;
     static constexpr int channels = 1;
 
 private:

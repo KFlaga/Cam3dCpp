@@ -19,7 +19,7 @@ ELSEIF(CMAKE_BUILD_TYPE MATCHES Release)
 message(STATUS "Release build.")
 add_definitions(-D_RELEASE)
 ELSE()
-message(FATAL_ERROR "Bad build type.")
+message(FATAL_ERROR "Bad build type: ${CMAKE_BUILD_TYPE}.")
 ENDIF()
 
 find_package(Boost 1.61.0 REQUIRED)
