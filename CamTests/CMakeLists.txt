@@ -2,10 +2,12 @@ find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
 set(SOURCES_CamTests 
-    TestBitWord.cpp
-    TestVector2.cpp
-    TestCensus.cpp
-    TestSgmPaths.cpp
+#    TestBitWord.cpp
+#    TestVector2.cpp
+#    TestCensus.cpp
+#    TestSgmPaths.cpp
+    TestSgmPathsManager.cpp
+    TestSgmAggregator.cpp
 #    to_remove.cpp
 )
 

@@ -33,6 +33,32 @@ namespace cam3d
 		return std::abs(a - b) > delta;
     }
 
+    namespace detail
+    {
+    template<typename T, typename... Rest>
+    struct multi_min
+    {
+        static constexpr T getMin(T x, Rest... r)
+        {
+            return std::min(x, multi_min<Rest...>::getMin(r...));
+        }
+    };
+
+    template<typename T>
+    struct multi_min<T>
+    {
+        static constexpr T getMin(T x)
+        {
+            return x;
+        }
+    };
+    }
+    template<typename... Args>
+    constexpr minFrom(Args... args)
+    {
+        return detail::multi_min<Args...>::getMin(args...);
+    }
+
     namespace global
     {
         constexpr int imageRows = 480;

@@ -38,10 +38,10 @@ namespace cam3d
         }
 #endif
         T& operator()(const int r, const int c) { return data[r][c]; }
-        const T& operator()(const int r, const int c) const { return data[r][c]; }
+        const T operator()(const int r, const int c) const { return data[r][c]; }
 
         T& operator()(const Vector2i& pos) { return data[pos.y][pos.x]; }
-        const T& operator()(const Vector2i& pos) const { return data[pos.y][pos.x]; }
+        const T operator()(const Vector2i& pos) const { return data[pos.y][pos.x]; }
 
         // Zeroes array ( only for numerics/pointers )
         void clear()

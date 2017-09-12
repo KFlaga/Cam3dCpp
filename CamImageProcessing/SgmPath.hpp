@@ -4,13 +4,18 @@
 
 namespace cam3d
 {
-enum class PathDirection : int
+namespace PathDirections
+{
+enum PathDirection_ : int
 {
     PosX, NegX, PosY, NegY,
     PosX_PosY, NegX_PosY, PosX_NegY, NegX_NegY,
     PosX2_PosY, NegX2_PosY, PosX2_NegY, NegX2_NegY,
     PosX_PosY2, NegX_PosY2, PosX_NegY2, NegX_NegY2,
 };
+}
+using PathDirection = PathDirections::PathDirection_;
+
 
 class SgmPath
 {
@@ -34,7 +39,7 @@ public:
     virtual void init() = 0;
     virtual void next() = 0;
 
-    using BorderPixelGetter = Point2(Point2, int, int);
+    using BorderPixelGetter = Point2(*)(Point2, int, int);
 };
 
 template<int moveY, int moveX>
@@ -208,15 +213,17 @@ private:
     };
 };
 
-template<PathDirection dir>
-using Path = SgmPath;
+template<PathDirection>
+struct Path
+{
+};
 
-template<> using Path<PathDirection::PosX> = ConcreteSgmPath<0, 1>;
-template<> using Path<PathDirection::NegX> = ConcreteSgmPath<0, -1>;
-template<> using Path<PathDirection::PosY> = ConcreteSgmPath<1, 0>;
-template<> using Path<PathDirection::NegY> = ConcreteSgmPath<-1, 0>;
-template<> using Path<PathDirection::PosX_PosY> = ConcreteSgmPath<1, 1>;
-template<> using Path<PathDirection::NegX_PosY> = ConcreteSgmPath<1, -1>;
-template<> using Path<PathDirection::PosX_NegY> = ConcreteSgmPath<-1, 1>;
-template<> using Path<PathDirection::NegX_NegY> = ConcreteSgmPath<-1, -1>;
+template<> struct Path<PathDirection::PosX> : public ConcreteSgmPath<0, 1> { };
+template<> struct Path<PathDirection::NegX> : public ConcreteSgmPath<0, -1> { };
+template<> struct Path<PathDirection::PosY> : public ConcreteSgmPath<1, 0> { };
+template<> struct Path<PathDirection::NegY> : public ConcreteSgmPath<-1, 0> { };
+template<> struct Path<PathDirection::PosX_PosY> : public ConcreteSgmPath<1, 1> { };
+template<> struct Path<PathDirection::NegX_PosY> : public ConcreteSgmPath<1, -1> { };
+template<> struct Path<PathDirection::PosX_NegY> : public ConcreteSgmPath<-1, 1> { };
+template<> struct Path<PathDirection::NegX_NegY> : public ConcreteSgmPath<-1, -1> { };
 }

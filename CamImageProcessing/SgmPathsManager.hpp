@@ -4,11 +4,16 @@
 #include <CamCommon/Array2d.hpp>
 #include <CamCommon/Array3d.hpp>
 #include <CamImageProcessing/SgmPath.hpp>
+#include <CamImageProcessing/CensusCostComputer.hpp>
 #include <functional>
+#include <array>
+#include <boost/hana/if.hpp>
+
+namespace hana = boost::hana;
 
 namespace cam3d
 {
-
+template<int rows, int cols>
 class SgmPathsManager
 {
 public:
@@ -18,58 +23,92 @@ public:
         int disparity;
     };
 
-    static constexpr int rows = 10;
-    static constexpr int cols = 10;
+    enum class RunDirection
+    {
+        TopDown,
+        BottomUp
+    };
+
     static constexpr int pathsCount = 8;
 
+private:
     Array3d<SgmPath*, rows, cols, pathsCount> paths;
-    Array3d<DisparityCost, rows, cols, pathsCount> bestPathsCost;
+    Array3d<DisparityCost, rows, cols, pathsCount> bestPathsCosts;
     SgmPath::BorderPixelGetter borderPixelGetters[pathsCount];
     std::function<double(Point2, Point2)> getCost;
+    bool isLeftImageBase;
 
-    int pathsInRun_RightTopDown[] = {
+    static constexpr int pathsPerRun = pathsCount / 2;
+    std::array<int, pathsPerRun> pathsInRun_RightTopDown = {
         PathDirection::PosX,
         PathDirection::PosY,
         PathDirection::PosX_PosY,
         PathDirection::NegX_PosY
     };
 
-    int pathsInRun_RightBottomUp[] = {
+    std::array<int, pathsPerRun> pathsInRun_RightBottomUp = {
         PathDirection::NegX,
         PathDirection::NegY,
         PathDirection::PosX_NegY,
         PathDirection::NegX_NegY
     };
 
-    int pathsInRun_LeftTopDown[] = {
+    std::array<int, pathsPerRun> pathsInRun_LeftTopDown = {
         PathDirection::NegX,
         PathDirection::PosY,
         PathDirection::PosX_PosY,
         PathDirection::NegX_PosY
     };
 
-    int pathsInRun_LeftBottomUp[] = {
+    std::array<int, pathsPerRun> pathsInRun_LeftBottomUp = {
         PathDirection::PosX,
         PathDirection::NegY,
         PathDirection::PosX_NegY,
         PathDirection::NegX_NegY
     };
 
-    void init(std::function<double(Point2, Point2)> costGetter)
+public:
+    void init(std::function<double(Point2, Point2)> getCost_, bool isLeftBase)
     {
-        getCost = costGetter;
+        isLeftImageBase = isLeftBase;
+        getCost = getCost_;
         createBorderPaths();
         initBorderPixelGetters();
     }
 
-    // private:
-    int getDispRange(Point2 pixel)
+    std::array<int, pathsPerRun> getPathForRun(RunDirection dir)
     {
-        return isLeftImageBase ?
-                    pixel.x :
-                    cols - 1 - pixel.x;
+        return dir == RunDirection::TopDown ?
+            (isLeftImageBase ? pathsInRun_LeftTopDown : pathsInRun_RightTopDown) :
+            (isLeftImageBase ? pathsInRun_LeftBottomUp : pathsInRun_RightBottomUp);
     }
 
+    int getDispRange(Point2 pixel)
+    {
+        return isLeftImageBase ? pixel.x : cols - 1 - pixel.x;
+    }
+
+    SgmPath* getPath(Point2 pixel, int pathNum) const
+    {
+        return paths(pixel, pathNum);
+    }
+
+    DisparityCost getBestPathCosts(Point2 pixel, int pathNum) const
+    {
+        return bestPathsCosts(pixel, pathNum);
+    }
+
+    void setBestPathCosts(Point2 pixel, int pathNum, DisparityCost cost)
+    {
+        bestPathsCosts(pixel, pathNum) = cost;
+    }
+
+    Point2 getBorderPixel(Point2 point, int pathDir)
+    {
+        return borderPixelGetters[pathDir](point, rows, cols);
+    }
+
+private:
     void createBorderPaths()
     {
         paths.fill(nullptr);
@@ -140,26 +179,23 @@ public:
                 path->imageWidth = cols;
                 path->startPixel = borderPixel;
                 path->length = rows + cols;
-                path->lastStepCosts = new double[cols];
+                path->lastStepCosts = new double[cols + 1]; // Need cols + 1 for convinent bottom-up run
                 path->init();
 
-                findInitialCostOnPath(borderPixel, path, i);
+                findInitialCostOnPath(path, i);
             }
         }
     }
 
-    void findInitialCostOnPath(Point2 borderPixel, SgmPath* path, int pathNum)
+    void findInitialCostOnPath(SgmPath* path, int pathNum)
     {
         int bestDisp = 0;
-        double bestCost = costComp.getMaxCost() + 1.0;
-        matched.y = borderPixel.y;
-
-        // If base is right, then for each base pixel, matched one is on the right - disparity is positive
+        double bestCost = 1e12;
         int maxDisp = getDispRange(path->currentPixel);
         for(int d = 0; d < maxDisp; ++d)
         {
-            matched.x = isLeftImageBase ? path->currentPixel.x - d : path->currentPixel.x + d;
-            double cost = getCost(borderPixel, matched);
+            double cost = getCost(path->currentPixel,
+                                  path->currentPixel + Point2{ 0, isLeftImageBase ? -d : d });
             path->lastStepCosts[d] = cost;
 
             if(bestCost > cost)
