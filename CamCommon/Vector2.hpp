@@ -38,22 +38,22 @@ namespace cam3d
 			y /= s;
 		}
 
-        constexpr double dot(const Vector2 v)
+        constexpr double dot(const Vector2 v) const
 		{
 			return x * v.x + y * v.y;
 		}
 
-        constexpr double cross(const Vector2 v)
+        constexpr double cross(const Vector2 v) const
 		{
 			return x * v.y - y * v.x;
 		}
 
-        constexpr double lengthSquared()
+        constexpr double lengthSquared() const
 		{
 			return x * x + y * y;
 		}
 
-		double length()
+		double length() const
 		{
 			return std::sqrt(x * x + y * y);
 		}
@@ -68,47 +68,47 @@ namespace cam3d
 			}
 		}
 
-        constexpr double distanceToSquared(const Vector2 v)
+        constexpr double distanceToSquared(const Vector2 v) const
 		{
 			return (x - v.x) * (x - v.x) + (y - v.y) * (y - v.y);
 		}
 
-        double distanceTo(const Vector2 v)
+        double distanceTo(const Vector2 v) const
 		{
 			return std::sqrt(distanceToSquared(v));
 		}
 
 		// Returns value in radians
-        double angleTo(const Vector2 v)
+        double angleTo(const Vector2 v) const
 		{
 			return std::asin(sinusTo(v));
 		}
 
 		// Returns value in radians. Assumes both vector are normalized
-        double angleToNormalized(const Vector2 v)
+        double angleToNormalized(const Vector2 v) const
 		{
 			return std::asin(cross(v));
 		}
 
 		// Returns sinus of angle to v, value in radians
-        double sinusTo(const Vector2 v)
+        double sinusTo(const Vector2 v) const
 		{
 			return cross(v) / std::sqrt(lengthSquared() * v.lengthSquared());
 		}
 
 		// Returns sinus of angle to v, value in radians. Assumes both vector are normalized
-        double sinusToNormalized(const Vector2 v)
+        double sinusToNormalized(const Vector2 v) const
 		{
 			return cross(v);
 		}
 		// Returns cosinus of angle to v, value in radians
-        double cosinusTo(const Vector2 v)
+        double cosinusTo(const Vector2 v) const
 		{
 			return dot(v) / std::sqrt(lengthSquared() * v.lengthSquared());
 		}
 
 		// Returns cosinus of angle to v, value in radians. Assumes both vector are normalized
-        double cosinusToNormalized(const Vector2 v)
+        double cosinusToNormalized(const Vector2 v) const
 		{
 			return dot(v);
 		}
@@ -213,11 +213,6 @@ namespace cam3d
         constexpr operator Vector2i() const
         {
             return Vector2i{x, y};
-        }
-
-        constexpr operator Vector2i&()
-        {
-            return *this;
         }
     };
 }

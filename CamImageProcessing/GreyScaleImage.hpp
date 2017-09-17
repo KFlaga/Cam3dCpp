@@ -4,18 +4,18 @@
 
 namespace cam3d
 {
-template<int rows, int cols>
 class GreyScaleImage
 {
 public:
-    using Matrix = Array2d<double, rows, cols>;
-    static constexpr int channels = 1;
+	using Matrix = Array2d<double>;
 
 private:
-    Matrix imageMatrix;
+	Matrix imageMatrix;
 
 public:
-    GreyScaleImage() = default;
+    GreyScaleImage(int rows, int cols) :
+		imageMatrix{rows, cols}
+	{ }
 
     double operator()(int y, int x) const { return imageMatrix(y,x); }
     double& operator()(int y, int x) { return imageMatrix(y,x); }
@@ -24,13 +24,11 @@ public:
 
     int getColumnCount() const { return imageMatrix.getColumnCount(); }
     int getRowCount() const { return imageMatrix.getRowCount(); }
-    int getChannelsCount() const { return channels; }
+    int getChannelsCount() const { return 1; }
 
     bool haveValueAt(int y, int x) { return true; }
 
-    Matrix& getMatrix(int channel) { return imageMatrix; }
-    const Matrix& getMatrix(int channel) const { return imageMatrix; }
-    Matrix& getMatrix() { return imageMatrix; }
+	Matrix& getMatrix() { return imageMatrix; }
     const Matrix& getMatrix() const { return imageMatrix; }
 };
 }

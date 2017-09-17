@@ -4,16 +4,11 @@
 #include <CamCommon/Array2d.hpp>
 #include <CamCommon/Array3d.hpp>
 #include <CamImageProcessing/SgmPath.hpp>
-#include <CamImageProcessing/CensusCostComputer.hpp>
 #include <functional>
 #include <array>
-#include <boost/hana/if.hpp>
-
-namespace hana = boost::hana;
 
 namespace cam3d
 {
-template<int rows, int cols>
 class SgmPathsManager
 {
 public:
@@ -32,8 +27,10 @@ public:
     static constexpr int pathsCount = 8;
 
 private:
-    Array3d<SgmPath*, rows, cols, pathsCount> paths;
-    Array3d<DisparityCost, rows, cols, pathsCount> bestPathsCosts;
+	int rows;
+	int cols;
+    Array3d<SgmPath*> paths;
+    Array3d<DisparityCost> bestPathsCosts;
     SgmPath::BorderPixelGetter borderPixelGetters[pathsCount];
     std::function<double(Point2, Point2)> getCost;
     bool isLeftImageBase;
@@ -68,10 +65,14 @@ private:
     };
 
 public:
-    void init(std::function<double(Point2, Point2)> getCost_, bool isLeftBase)
+    SgmPathsManager(int rows_, int cols_, std::function<double(Point2, Point2)> getCost_, bool isLeftImageBase_) :
+		rows{ rows_ },
+		cols{ cols_ },
+		getCost{ getCost_ },
+		isLeftImageBase(isLeftImageBase_),
+		paths{rows, cols, pathsCount},
+		bestPathsCosts{rows, cols, pathsCount}
     {
-        isLeftImageBase = isLeftBase;
-        getCost = getCost_;
         createBorderPaths();
         initBorderPixelGetters();
     }
@@ -111,7 +112,7 @@ public:
 private:
     void createBorderPaths()
     {
-        paths.fill(nullptr);
+        paths.fill(0);
         for(int x = 0; x < cols; ++x)
         {
             createPathsForBorderPixel({0, x});

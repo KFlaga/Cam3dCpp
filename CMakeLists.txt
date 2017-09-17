@@ -25,6 +25,4 @@ ENDIF()
 find_package(Boost 1.61.0 REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
-add_subdirectory(CamCommon)
-add_subdirectory(CamImageProcessing)
 add_subdirectory(CamTests)

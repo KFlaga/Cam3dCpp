@@ -1,24 +1,23 @@
 #pragma once
 
-#include <CamCommon/Matrix.hpp>
+#include <CamCommon/Array2d.hpp>
 #include <type_traits>
 
 namespace cam3d
 {
-template<typename Image, int rows, int cols, bool haveRefImage = true>
+template<typename Image>
 class MaskedImage
 {
 public:
-    using Matrix = Image::Matrix;
-    using ImageFieldType = std::conditional<haveRefImage, Image&, Image>::type;
-    static constexpr int channels = Image::channels;
+	using ImageType = Image;
+	using Matrix = typename Image::Matrix;
 
 private:
-    ImageFieldType image;
-    Matrix<bool, Image::Matrix::rows, Image::Matrix::cols> mask;
+	Image& image;
+    Array2d<bool> mask;
 
 public:
-    MaskedImage(ImageFieldType image_) :
+    MaskedImage(Image& image_) :
         image(image_),
         mask{ }
     {
@@ -32,13 +31,11 @@ public:
 
     int getColumnCount() const { return image.getColumnCount(); }
     int getRowCount() const { return image.getRowCount(); }
-    int getChannelsCount() const { return channels; }
+    int getChannelsCount() const { return image.getChannelsCount(); }
 
     bool haveValueAt(int y, int x) { return mask(y, x); }
     void setMaskAt(int y, int x, bool value) { mask(y, x) = value; }
 
-    Matrix& getMatrix(int channel) { return image.getMatrix(channel); }
-    const Matrix& getMatrix(int channel) const { return image.getMatrix(channel); }
     Matrix& getMatrix() { return image.getMatrix(); }
     const Matrix& getMatrix() const { return image.getMatrix(); }
 };

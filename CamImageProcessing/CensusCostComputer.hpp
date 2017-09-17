@@ -2,19 +2,21 @@
 
 #include <CamCommon/Array2d.hpp>
 #include <CamImageProcessing/BorderFunction.hpp>
+#include <cstring>
 
 namespace cam3d
 {
+// TODO:: add support for masked image
 template<typename Image, typename BitWord>
 class CensusCostComputer
 {
 public:
-    using uint = typename BitWord::uintType;
-    using BitWordMatrix = Array2d<BitWord, Image::Matrix::rows, Image::Matrix::cols>;
+    using uint_t = typename BitWord::uint_t;
+    using BitWordMatrix = Array2d<BitWord>;
 
 private:
-    int borderWidth;
-    int borderHeight;
+    int rows;
+    int cols;
     int maskLength;
     double maxCost;
 
@@ -25,6 +27,15 @@ private:
     int maskHeight; // Actual height is equal to maskHeight*2 + 1
 
 public:
+    CensusCostComputer(int rows_, int cols_) :
+        rows{rows_},
+        cols{cols_},
+        censusBase{rows, cols},
+        censusMatched{rows, cols}
+    {
+
+    }
+
     double getCost(Point2 pixelBase, Point2 pixelMatched)
     {
         return censusBase(pixelBase.y, pixelBase.x).getHammingDistance(
@@ -43,8 +54,6 @@ public:
         censusMatched.clear();
 
         maskLength = (2 * maskHeight + 1) * (2 * maskWidth + 1);
-        borderHeight = maskHeight;
-        borderWidth = maskWidth;
         maxCost = maskLength - 1;
 
         BorderFunction::run
@@ -56,10 +65,6 @@ public:
         );
     }
 
-    void update() { }
-
-    int getBorderWidth() const { return borderWidth; }
-    int getBorderHeight() const { return borderHeight; }
     int getMaskLength() const { return maskLength; }
     double getMaxCost() const { return maxCost; }
 
@@ -74,8 +79,8 @@ public:
 private:
     void censusTransform(int y, int x, Image& imageBase, Image& imageMatched)
     {
-        uint maskBase[BitWord::lengthInWords];
-        uint maskMatch[BitWord::lengthInWords];
+        uint_t maskBase[BitWord::lengthInWords];
+        uint_t maskMatch[BitWord::lengthInWords];
         std::memset(maskBase, 0, sizeof(maskBase));
         std::memset(maskMatch, 0, sizeof(maskMatch));
 
@@ -102,8 +107,8 @@ private:
 
     void censusTransform_Border(int y, int x, Image& imageBase, Image& imageMatched)
     {
-        uint maskBase[BitWord::lengthInWords];
-        uint maskMatch[BitWord::lengthInWords];
+        uint_t maskBase[BitWord::lengthInWords];
+        uint_t maskMatch[BitWord::lengthInWords];
         std::memset(maskBase, 0, sizeof(maskBase));
         std::memset(maskMatch, 0, sizeof(maskMatch));
 
@@ -136,4 +141,7 @@ private:
         censusMatched(y, x) = BitWord{&maskMatch[0]};
     }
 };
+
+template<typename Image, int maskRadius>
+using CensusCostComputer32 = CensusCostComputer<Image, BitWord32<((2 * maskRadius + 1) * (2 * maskRadius + 1) / 32) + 1>>;
 }

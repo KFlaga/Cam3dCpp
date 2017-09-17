@@ -10,7 +10,11 @@ public:
     static constexpr int imgSize = 10;
     static constexpr int last = imgSize - 1;
 
-    SgmPathsManager<imgSize, imgSize> mgr;
+    SgmPathsManager mgr;
+
+    TestSgmPathsManager() :
+        mgr{imgSize, imgSize,[](Point2 a, Point2 b){ return 1.0; }, true}
+    { }
 };
 
 TEST_F(TestSgmPathsManager, CanBeCreated)
@@ -18,15 +22,8 @@ TEST_F(TestSgmPathsManager, CanBeCreated)
     ASSERT_TRUE(true);
 }
 
-TEST_F(TestSgmPathsManager, CanBeInited)
-{
-    mgr.init([](Point2 a, Point2 b){ return 1.0; }, true);
-}
-
 TEST_F(TestSgmPathsManager, CreatesBorderPaths)
 {
-    mgr.init([](Point2 a, Point2 b){ return 1.0; }, true);
-
     using Dir = PathDirection;
     ASSERT_TRUE( mgr.getPath({last/2, last/2}, Dir::NegX) == nullptr );
     ASSERT_TRUE( mgr.getPath({0, 0}, Dir::PosX) != nullptr );

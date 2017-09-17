@@ -54,7 +54,7 @@ namespace cam3d
     };
     }
     template<typename... Args>
-    constexpr minFrom(Args... args)
+    constexpr auto minFrom(Args... args) -> decltype(detail::multi_min<Args...>::getMin(args...))
     {
         return detail::multi_min<Args...>::getMin(args...);
     }
@@ -63,5 +63,10 @@ namespace cam3d
     {
         constexpr int imageRows = 480;
         constexpr int imageCols = 640;
+    }
+
+    constexpr int round(const double x)
+    {
+        return x - static_cast<double>(static_cast<int>(x)) > 0.5 ? static_cast<int>(x) + 1 : static_cast<int>(x);
     }
 }

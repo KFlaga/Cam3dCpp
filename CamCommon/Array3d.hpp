@@ -8,77 +8,69 @@
 namespace cam3d
 {
     // Represent static 3d array: [row][col][dim]
-    template<typename T, int rows_, int cols_, int dim_>
+    template<typename T>
     class Array3d
     {
-    public:
-        static constexpr int rows = rows_;
-        static constexpr int cols = cols_;
-        static constexpr int dim = dim_;
     protected:
-        T data[rows][cols][dim];
+        int rows;
+        int cols;
+        int dim;
+
+    private:
+        int getSize() const { return rows * cols * dim; }
+        int getIdx(const int r, const int c, const int d) const { return (r * cols + c) * dim + d; }
+        std::vector<T> data;
 
     public:
+        Array3d(int rows_, int cols_, int dim_) : rows{rows}, cols{cols_}, dim{dim_}
+        {
+            data.resize(getSize());
+        }
 
         T& operator()(const int r, const int c, const int d)
         {
-            return data[r][c][d];
+            return data[getIdx(r, c, d)];
         }
         const T operator()(const int r, const int c, const int d) const
         {
-            return data[r][c][d];
+            return data[getIdx(r, c, d)];
         }
         T& operator()(const Point2 p, const int d)
         {
-            return data[p.y][p.x][d];
+            return data[getIdx(p.y, p.x, d)];
         }
         const T operator()(const Point2 p, const int d) const
         {
-            return data[p.y][p.x][d];
+            return data[getIdx(p.y, p.x, d)];
         }
         T* operator()(const int r, const int c)
         {
-            return &data[r][c][0];
+            return &data[getIdx(r, c, 0)];
         }
         const T* operator()(const int r, const int c) const
         {
-            return &data[r][c][0];
+            return &data[getIdx(r, c, 0)];
         }
         T* operator()(const Point2 p)
         {
-            return &data[p.y][p.x][0];
+            return &data[getIdx(p.y, p.x, 0)];
         }
         const T* operator()(const Point2 p) const
         {
-            return &data[p.y][p.x][0];
+            return &data[getIdx(p.y, p.x, 0)];
         }
 
         // Fills array with default objects
         void clear()
         {
-            for(int r = 0; r < rows; ++r)
-            {
-                for(int c = 0; c < cols; ++c)
-                {
-                    for(int d = 0; d < dim; ++d)
-                    {
-                        data[r][c][d] = T{};
-                    }
-                }
-            }
+            fill(T{});
         }
         // Fills array with given value
         void fill(const T& value)
         {
-            for(int r = 0; r < rows; ++r)
+            for(int i = 0, size = getSize(); i < size; ++i)
             {
-                for(int c = 0; c < cols; ++c)
-                {
-                    for(int d = 0; d < dim; ++d)
-                    {
-                        data[r][c][d] = value;
-                    }
-                }
+                data[i] = value;
             }
         }
 

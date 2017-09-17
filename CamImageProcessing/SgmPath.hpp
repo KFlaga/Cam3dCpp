@@ -66,7 +66,8 @@ public:
         return border_helper::getPixel(pixel, rows, cols);
     }
 private:
-    static constexpr getAbs(const int i)
+	template<typename T>
+    static constexpr T getAbs(const T i)
     {
         return i < 0 ? -i : i;
     }
@@ -122,64 +123,87 @@ private:
     {
         static Point2 getMove(int currentIndex)
         {
-            return Point2{getMove1<moveY>(currentIndex), getMove1<moveX>(currentIndex)};
+            return Point2{ 
+				std::conditional<getAbs(moveY) == 2, Move2<moveY>, Move01<moveY>>::type::getMove(currentIndex),
+				std::conditional<getAbs(moveX) == 2, Move2<moveX>, Move01<moveX>>::type::getMove(currentIndex)
+			};
         }
 
-        template<int m>
-        static typename std::enable_if<getAbs(m) == 2, int>::type getMove1(int currentIndex)
-        {
-            static const int m2 = m / 2;
-            return (currentIndex & 1) == 0 ? 0 : m2;
-        }
+		template<int m>
+		struct Move2
+		{
+			static int getMove(int currentIndex)
+			{
+				static const int m2 = m / 2;
+				return (currentIndex & 1) == 0 ? 0 : m2;
+			}
+		};
 
-        template<int m>
-        static typename std::enable_if<getAbs(m) < 2, int>::type getMove1(int currentIndex)
-        {
-            return m;
-        }
+		template<int m>
+		struct Move01
+		{
+			static int getMove(int currentIndex)
+			{
+				return m;
+			}
+		};
     };
 
     struct border_helper
     {
         static Point2 getPixel(Point2 pixel, int rows, int cols)
         {
-            return getPixel1<moveY, moveX>(pixel, rows, cols);
+			return std::conditional<(getAbs(moveX) < 2) && (getAbs(moveY) < 2), Pixel01, Pixel2
+				>::type::getPixel(pixel, rows, cols);
         }
 
-        template<int y, int x>
-        static typename std::enable_if<(getAbs(x) < 2)&&(getAbs(y) < 2), Point2>::type getPixel1(Point2 pixel, int rows, int cols)
-        {
-            int d = getMoveLimit<y, x>(pixel, rows, cols);
-            return Point2{ pixel.y + d * (-y), pixel.x + d * (-x) };
-        }
+		struct Pixel01
+		{
+			static Point2 getPixel(Point2 pixel, int rows, int cols)
+			{
+				int d = Pixel01::getMoveLimit(pixel, rows, cols);
+				return Point2{ pixel.y + d * (-moveY), pixel.x + d * (-moveX) };
+			}
 
-        template<int y, int x>
-        static int getMoveLimit(Point2 pixel, int rows, int cols)
-        {
-            return std::min(
-                    getMoveLimit1<y, 0>(pixel, rows, cols),
-                    getMoveLimit1<0, x>(pixel, rows, cols)
-                );
-        }
+			static int getMoveLimit(Point2 pixel, int rows, int cols)
+			{
+				return std::min(
+					getMoveLimit1<moveY, 0>(pixel, rows, cols),
+					getMoveLimit1<0, moveX>(pixel, rows, cols)
+				);
+			}
+		};
 
-        template<int y, int x>
-        static typename std::enable_if<getAbs(x) == 2, Point2>::type getPixel1(Point2 pixel, int rows, int cols)
-        {
-            return {0, 0};
-        }
+		struct Pixel2
+		{
+			static Point2 getPixel(Point2 pixel, int rows, int cols)
+			{
+				return std::conditional<getAbs(moveX) == 2, X2, Y2>::type::getPixel(pixel, rows, cols);
+			}
 
-        template<int y, int x>
-        static typename std::enable_if<getAbs(y) == 2, Point2>::type getPixel1(Point2 pixel, int rows, int cols)
-        {
-            // Move xy,x,xy,x
-            // check if is bounded by x (compare lengths of opposite move)
-            if(length_helper::getLength2(10000, rows, cols, pixel) >=
-               length_helper::getLength2(10000, rows, cols, pixel))
-            {
-                int d = getMoveLimit1<y / 2, x / 2>(pixel, rows, cols);
-                return Point2{ pixel.y + d * (-y) / 4, pixel.x + d * (-x) };
-            }
-        }
+			struct X2
+			{
+				static Point2 getPixel(Point2 pixel, int rows, int cols)
+				{
+					return{ 0, 0 };
+				}
+			};
+
+			struct Y2
+			{
+				static Point2 getPixel(Point2 pixel, int rows, int cols)
+				{
+					// Move xy,x,xy,x
+					// check if is bounded by x (compare lengths of opposite move)
+					if (length_helper::getLength2(10000, rows, cols, pixel) >=
+						length_helper::getLength2(10000, rows, cols, pixel))
+					{
+						int d = getMoveLimit1<y / 2, x / 2>(pixel, rows, cols);
+						return Point2{ pixel.y + d * (-y) / 4, pixel.x + d * (-x) };
+					}
+				}
+			};
+		};
 
         template<int y, int x>
         static typename std::enable_if<(x == 0)&&(y == 0), int>::type getMoveLimit1(Point2 pixel, int rows, int cols)

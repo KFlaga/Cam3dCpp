@@ -64,21 +64,20 @@ namespace cam3d
 		}
 	};
 
-	template<size_t length>
-	struct BitWord32
+	template<size_t length, size_t bits, typename uint_type, typename HammingLookup>
+	struct BitWord
 	{
 		static constexpr size_t lengthInWords = length;
-		static constexpr size_t bitSizeOfWord = 32;
-		typedef uint32_t uintType;
-		
-		uint32_t bytes[length];
+		static constexpr size_t bitSizeOfWord = bits;
+		using uint_t = uint_type;
 
-		BitWord32()
+		uint_t bytes[length];
+		BitWord()
 		{
 			std::memset(bytes, 0, sizeof(bytes));
 		}
 
-		BitWord32(uint32_t* bytes_)
+		BitWord(uint_t* bytes_)
 		{
 			std::memcpy(bytes, bytes_, sizeof(bytes));
 		}
@@ -87,70 +86,30 @@ namespace cam3d
 		template<size_t i, bool = false>
 		struct helper
 		{
-            static uint32_t getOnesCount(const uint32_t* b1, const uint32_t* b2)
+			static uint_t getOnesCount(const uint_t* b1, const uint_t* b2)
 			{
-				return HammingLookup32::getOnesCount(b1[i] ^ b2[i]) + helper<i + 1>::getOnesCount(b1, b2);
+				return HammingLookup::getOnesCount(b1[i] ^ b2[i]) + helper<i + 1>::getOnesCount(b1, b2);
 			}
-        };
-        
+		};
+
 		template<bool dummy>
 		struct helper<length, dummy>
 		{
-            static uint32_t getOnesCount(const uint32_t* , const uint32_t* )
+			static uint_t getOnesCount(const uint_t*, const uint_t*)
 			{
 				return 0;
 			}
 		};
 
 	public:
-        inline uint32_t getHammingDistance(const BitWord32& bw) const
+		inline uint_t getHammingDistance(const BitWord& bw) const
 		{
 			return helper<0>::getOnesCount(bytes, bw.bytes);
 		}
-    };
+	};
 
 	template<size_t length>
-	struct BitWord64
-	{
-		static constexpr size_t lengthInWords = length;
-		static constexpr size_t bitSizeOfWord = 64;
-		typedef uint64_t uintType;
-		
-		uint64_t bytes[length];
-
-		BitWord64()
-		{
-			std::memset(bytes, 0, sizeof(bytes));
-		}
-
-		BitWord64(uint64_t* bytes_)
-		{
-			std::memcpy(bytes, bytes_, sizeof(bytes));
-		}
-
-	private:
-		template<size_t i, bool = false>
-		struct helper
-		{
-            static uint64_t getOnesCount(const uint64_t* b1, const uint64_t* b2)
-			{
-				return HammingLookup64::getOnesCount(b1[i] ^ b2[i]) + helper<i + 1>::getOnesCount(b1, b2);
-			}
-        };
-        
-		template<bool dummy>
-		struct helper<length, dummy>
-		{
-            static uint64_t getOnesCount(const uint64_t* , const uint64_t* )
-			{
-				return 0;
-			}
-		};
-
-	public:
-        inline uint64_t getHammingDistance(const BitWord64& bw) const
-		{
-			return helper<0>::getOnesCount(bytes, bw.bytes);
-		}
-    };
+	using BitWord32 = BitWord<length, 32, uint32_t, HammingLookup32>;
+	template<size_t length>
+	using BitWord64 = BitWord<length, 64, uint64_t, HammingLookup64>;
 }

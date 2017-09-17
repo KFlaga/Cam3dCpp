@@ -3,27 +3,27 @@
 #include "PreReqs.hpp"
 #include "Vector2.hpp"
 #include <vector>
-#include <cstring>
+#include <algorithm>
 
 namespace cam3d
 {
-    // Represent static 2d array in row-major order
-    // TODO: change name to Array2d
-    template<typename T, int rows_, int cols_>
+    template<typename T>
     class Array2d
     {
     protected:
-#ifdef _DEBUG
-        std::vector<std::vector<T>> data;
-#else
-        T data[rows][cols];
-#endif
+        int rows;
+        int cols;
+
     public:
-        static constexpr int rows = rows_;
-        static constexpr int cols = cols_;
+        int getRowCount() const { return rows; }
+        int getColumnCount() const { return cols; }
 
 #ifdef _DEBUG
-        Array2d()
+    private:
+        std::vector<std::vector<T>> data;
+
+    public:
+        Array2d(int rows_, int cols_) : rows{rows_}, cols{cols_}
         { 
             data.resize(rows);
             for(int r = 0; r < rows; ++r)
@@ -31,30 +31,18 @@ namespace cam3d
                 data[r].resize(cols);
             }
         }
-#else // _RELEASE
-        Matrix()
-        {
 
-        }
-#endif
         T& operator()(const int r, const int c) { return data[r][c]; }
         const T operator()(const int r, const int c) const { return data[r][c]; }
 
         T& operator()(const Vector2i& pos) { return data[pos.y][pos.x]; }
         const T operator()(const Vector2i& pos) const { return data[pos.y][pos.x]; }
 
-        // Zeroes array ( only for numerics/pointers )
         void clear()
         {
-            for(int r = 0; r < rows; ++r)
-            {
-                for(int c = 0; c < cols; ++c)
-                {
-                    data[r][c] = T{};
-                }
-            }
+            fill(T{});
         }
-        // Fills array with given value
+
         void fill(const T& value)
         {
             for(int r = 0; r < rows; ++r)
@@ -66,7 +54,36 @@ namespace cam3d
             }
         }
 
-        int getRowCount() const { return rows; }
-        int getColumnCount() const { return cols; }
+#else
+    private:
+        int getSize() const { return rows * cols; }
+        int getIdx(const int r, const int c) const { return r * cols + c; }
+        std::vector<T> data;
+
+    public:
+        Array2d(int rows_, int cols_) : rows{rows_}, cols{cols_}
+        {
+            data.resize(getSize());
+        }
+
+        T& operator()(const int r, const int c) { return data[getIdx(r, c)]; }
+        const T operator()(const int r, const int c) const { return data[getIdx(r, c)]; }
+
+        T& operator()(const Vector2i& pos) { return data[getIdx(pos.y, pos.x)]; }
+        const T operator()(const Vector2i& pos) const { return data[getIdx(pos.y, pos.x)]; }
+
+        void clear()
+        {
+            fill(T{});
+        }
+
+        void fill(const T& value)
+        {
+            for(int i = 0, size = getSize(); i < size; ++ i)
+            {
+                data[i] = value();
+            }
+        }
+#endif
     };
 }
