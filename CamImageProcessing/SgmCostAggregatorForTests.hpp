@@ -7,7 +7,7 @@
 #include <CamCommon/DisparityMap.hpp>
 #include <CamImageProcessing/CensusCostComputer.hpp>
 #include <CamImageProcessing/SgmPathsManager.hpp>
-#include <CamImageProcessing/SgmDisparityComputerForTests.hpp>
+#include <CamImageProcessing/SgmDisparityComputer.hpp>
 #include <stdexcept>
 #include <atomic>
 
@@ -38,12 +38,12 @@ public:
 };
 
 template<typename Image_, typename CostComputer_>
-class SgmCostAggregator : public ISgmCostAggregator
+class SgmCostAggregatorForTests : public ISgmCostAggregator
 {
 public:
     using Image = Image_;
 	using CostComputer = CostComputer_;
-    using DisparityComputer = SgmDisparityComputerForTests<Image, CostComputer>;
+	using DisparityComputer = SgmDisparityComputer<Image, CostComputer>;
     static constexpr int pathsCount = SgmPathsManager::pathsCount;
 
 private:
@@ -75,7 +75,7 @@ private:
 	std::string currentState;
 
 public:
-    SgmCostAggregator(int rows_, int cols_, bool isLeftImageBase_, Image& imageBase_, Image& imageMatched_, DisparityMap& map_) :
+    SgmCostAggregatorForTests(int rows_, int cols_, bool isLeftImageBase_, Image& imageBase_, Image& imageMatched_, DisparityMap& map_) :
         rows{rows_},
         cols{cols_},
         isLeftImageBase{isLeftImageBase_},
@@ -170,6 +170,7 @@ public:
         Point2 borderPixel = pathMgr.getBorderPixel(currentPixel, pathIdx);
         SgmPath* path = pathMgr.getPath(borderPixel, pathIdx);
         int maxDisp = getDispRange(path->currentPixel);
+        TEST_checkPathCorrectness(path);
 
         findCostForEachDisparityInStep(path, pathIdx, maxDisp);
 
@@ -191,7 +192,8 @@ public:
         {
             matched.x = isLeftImageBase ? path->currentPixel.x - d : path->currentPixel.x + d;
 
-            double cost = findCostForDisparity(path->currentPixel, path, d, maxDisp, bestPrev.disparity, bestPrev.cost);
+            double cost = findCostForDisparity(
+                              path->currentPixel, path, d, maxDisp, bestPrev.disparity, bestPrev.cost);
             thisStepCosts[d] = cost;
 
             if(bestCost > cost)
@@ -214,11 +216,31 @@ public:
                 getCost(currentPixel, matched) + path->lastStepCosts[maxDisp - 1];
     }
 
+    void TEST_checkPathCorrectness(SgmPath* path)
+    {
+        if(path == nullptr)
+        {
+            throw std::logic_error(std::string("File: ") + __FILE__ + ", line: " + std::to_string(__LINE__));
+        }
+        if(path->length <= 0)
+        {
+            throw std::logic_error(std::string("File: ") + __FILE__ + ", line: " + std::to_string(__LINE__));
+            //bestPathsCosts[path.CurrentPixel.Y, path.CurrentPixel.X, pathIdx] = new DisparityCost(0, 1e12);
+        }
+        if(path->currentIndex >= path->length)
+        {
+            throw std::logic_error(std::string("File: ") + __FILE__ + ", line: " + std::to_string(__LINE__));
+            //bestPathsCosts[path.CurrentPixel.Y, path.CurrentPixel.X, pathIdx] = new DisparityCost(0, 1e12);
+        }
+    }
+
     double findCostForDisparity(Point2 basePixel, SgmPath* path, int d, int dmax, int bestPrevDisp, double bestPrevCost)
     {
         double pen0 = path->lastStepCosts[d];
         double pen1 = findPenaltyClose(path, d, dmax);
         double pen2 = findPenaltyFar(dmax, d, bestPrevCost, bestPrevDisp, path);
+        TEST_checkPointsCorectness(basePixel, matched);
+        //TEST_checkCostSimplification(pen0, pen1, pen2, bestPrevCost);
 
         double c = costComp.getCost(basePixel, matched);
         return c + minFrom(pen0, pen1 + P1, pen2 + P2);
@@ -255,8 +277,33 @@ public:
         return pen2;
     }
 
+    void TEST_checkPointsCorectness(Point2 basePixel, Point2 matched)
+    {
+        if(basePixel.x >= cols || matched.x >= cols || basePixel.x < 0 || matched.x < 0)
+        {
+            throw std::logic_error(std::string("File: ") + __FILE__ + ", line: " + std::to_string(__LINE__));
+        }
+    }
+
+    void TEST_checkCostSimplification(double pen0, double pen1, double pen2, double bestPrevCost)
+    {
+        if(minFrom(pen0, pen1 + P1, pen2 + P2) != minFrom(pen0, pen1 + P1, bestPrevCost + P2))
+        {
+            throw std::logic_error(std::string("File: ") + __FILE__ + ", line: " + std::to_string(__LINE__));
+        }
+    }
+
+    // TODO: remove getCost and call costComp.getCost directly after ensuring that its clamped
     double getCost(Point2 basePixel, Point2 matchedPixel)
     {
+        if(matchedPixel.x != std::max(0, std::min(matchedPixel.x, cols)))
+        {
+            throw std::logic_error(std::string("File: ") + __FILE__ + ", line: " + std::to_string(__LINE__));
+        }
+        if(matchedPixel.y != std::max(0, std::min(matchedPixel.y, rows)))
+        {
+            throw std::logic_error(std::string("File: ") + __FILE__ + ", line: " + std::to_string(__LINE__));
+        }
         return costComp.getCost(basePixel, matchedPixel);
     }
 
@@ -291,7 +338,7 @@ public:
 };
 
 template<typename Image_, typename CostComputer_>
-void SgmCostAggregator<Image_, CostComputer_>::setParameters(SgmParameters params)
+void SgmCostAggregatorForTests<Image_, CostComputer_>::setParameters(SgmParameters params)
 {
 	this->lowPenaltyCoeff = params.lowPenaltyCoeff;
 	this->highPenaltyCoeff = params.highPenaltyCoeff;

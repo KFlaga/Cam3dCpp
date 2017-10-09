@@ -12,6 +12,8 @@ namespace Cam3dWrapper
 		{
 			return reinterpret_cast<Ty*>(getNative());
 		}
+
+		virtual void Update() = 0;
 	
 	internal:
 		virtual void updateNative() = 0;

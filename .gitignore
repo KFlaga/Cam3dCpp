@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+*.ipch
+*.metagen
+*.pdb
+*.log
+*.lastbuildstate

@@ -10,11 +10,11 @@ namespace cam3d
 	{
 		HammingLookup32() = delete;
 
-		static constexpr size_t wordBitsSize = ((uint64_t)std::numeric_limits<uint16_t>::max()) + 1;
+		static constexpr size_t wordBitsSize = ((size_t)std::numeric_limits<uint16_t>::max()) + 1;
 		static uint32_t* createWordBitsLut()
 		{
 			static uint32_t wordBits[wordBitsSize];
-			int x;
+			size_t x;
 			uint32_t count = 0u;
 			for (size_t i = 0; i < wordBitsSize; ++i)
 			{
@@ -39,13 +39,13 @@ namespace cam3d
 	{
 		HammingLookup64() = delete;
 
-		static constexpr size_t wordBitsSize = ((uint64_t)std::numeric_limits<uint16_t>::max()) + 1;
+		static constexpr uint64_t wordBitsSize = ((uint64_t)std::numeric_limits<uint16_t>::max()) + 1;
 		static uint64_t* createWordBitsLut()
 		{
 			static uint64_t wordBits[wordBitsSize];
-			int64_t x;
+			uint64_t x;
 			uint64_t count = 0u;
-			for (size_t i = 0u; i < wordBitsSize; ++i)
+			for (uint64_t i = 0u; i < wordBitsSize; ++i)
 			{
 				x = i;
 				for (count = 0u; x > 0; ++count)

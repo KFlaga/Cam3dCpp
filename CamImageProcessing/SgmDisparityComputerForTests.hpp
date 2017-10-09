@@ -27,7 +27,7 @@ enum class CostMethod
 };
 
 template<typename Image_, typename CostComputer_>
-class SgmDisparityComputer
+class SgmDisparityComputerForTests
 {
 public:
     static constexpr int pathsCount = 8;
@@ -38,6 +38,7 @@ protected:
 
 	using Image = Image_;
 	using CostComputer = CostComputer_;
+    using DisparityComputer = SgmDisparityComputerForTests;
     using DisparityList = std::array<Disparity, pathsCount>;
 
     Image& imageBase;
@@ -49,16 +50,16 @@ protected:
     int idx; // ?
     double pathLengthTreshold;
 
-    using ComputeMeanFunc = double(SgmDisparityComputer::*)(int,int);
+    using ComputeMeanFunc = double(DisparityComputer::*)(int,int);
     ComputeMeanFunc computeMean;
-    using ComputeCostFunc = double(SgmDisparityComputer::*)(double,int,int);
+    using ComputeCostFunc = double(DisparityComputer::*)(double,int,int);
     ComputeCostFunc computeCost;
 
     MeanMethod meanMethod;
     CostMethod costMethod;
 
 public:
-    SgmDisparityComputer(int rows_, int cols_, DisparityMap& map,
+    SgmDisparityComputerForTests(int rows_, int cols_, DisparityMap& map,
 		Image& imageBase_, Image& imageMatched_, CostComputer& costComp_) :
         rows{rows_},
         cols{cols_},
@@ -243,63 +244,63 @@ protected:
 };
 
 template<typename IT, typename CC>
-MeanMethod SgmDisparityComputer<IT, CC>::getMeanMethod() const
+MeanMethod SgmDisparityComputerForTests<IT, CC>::getMeanMethod() const
 {
     return meanMethod;
 }
 
 template<typename IT, typename CC>
-void SgmDisparityComputer<IT, CC>::setMeanMethod(MeanMethod method)
+void SgmDisparityComputerForTests<IT, CC>::setMeanMethod(MeanMethod method)
 {
     meanMethod = method;
     switch(method)
     {
     case MeanMethod::WeightedAverageWithPathLength:
-        computeMean = &SgmDisparityComputer::findMean_WeightedPath;
+        computeMean = &SgmDisparityComputerForTests::findMean_WeightedPath;
         break;
     case MeanMethod::WeightedAverage:
-        computeMean = &SgmDisparityComputer::findMean_Weighted;
+        computeMean = &SgmDisparityComputerForTests::findMean_Weighted;
         break;
     case MeanMethod::SimpleAverage:
     default:
-        computeMean = &SgmDisparityComputer::findMean_Simple;
+        computeMean = &SgmDisparityComputerForTests::findMean_Simple;
         break;
     }
 }
 
 template<typename IT, typename CC>
-CostMethod SgmDisparityComputer<IT, CC>::getCostMethod() const
+CostMethod SgmDisparityComputerForTests<IT, CC>::getCostMethod() const
 {
     return costMethod;
 }
 
 template<typename IT, typename CC>
-void SgmDisparityComputer<IT, CC>::setCostMethod(CostMethod method)
+void SgmDisparityComputerForTests<IT, CC>::setCostMethod(CostMethod method)
 {
     costMethod = method;
     switch(method)
     {
     case CostMethod::DistanceSquredToMeanRoot:
-        computeCost = &SgmDisparityComputer::findCost_Root;
+        computeCost = &SgmDisparityComputerForTests::findCost_Root;
         break;
     case CostMethod::DistanceSquredToMean:
-        computeCost = &SgmDisparityComputer::findCost_Squared;
+        computeCost = &SgmDisparityComputerForTests::findCost_Squared;
         break;
     case CostMethod::DistanceToMean:
     default:
-        computeCost = &SgmDisparityComputer::findCost_Simple;
+        computeCost = &SgmDisparityComputerForTests::findCost_Simple;
         break;
     }
 }
 
 template<typename IT, typename CC>
-double SgmDisparityComputer<IT, CC>::getPathLengthTreshold() const
+double SgmDisparityComputerForTests<IT, CC>::getPathLengthTreshold() const
 {
 	return pathLengthTreshold;
 }
 
 template<typename IT, typename CC>
-void SgmDisparityComputer<IT, CC>::setPathLengthTreshold(double val)
+void SgmDisparityComputerForTests<IT, CC>::setPathLengthTreshold(double val)
 {
 	pathLengthTreshold = val;
 }

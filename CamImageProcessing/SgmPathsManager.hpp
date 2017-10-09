@@ -37,28 +37,28 @@ private:
 
     static constexpr int pathsPerRun = pathsCount / 2;
     std::array<int, pathsPerRun> pathsInRun_RightTopDown = {
-        PathDirection::PosX,
+        PathDirection::NegX,
         PathDirection::PosY,
         PathDirection::PosX_PosY,
         PathDirection::NegX_PosY
     };
 
     std::array<int, pathsPerRun> pathsInRun_RightBottomUp = {
-        PathDirection::NegX,
+        PathDirection::PosX,
         PathDirection::NegY,
         PathDirection::PosX_NegY,
         PathDirection::NegX_NegY
     };
 
     std::array<int, pathsPerRun> pathsInRun_LeftTopDown = {
-        PathDirection::NegX,
+        PathDirection::PosX,
         PathDirection::PosY,
         PathDirection::PosX_PosY,
         PathDirection::NegX_PosY
     };
 
     std::array<int, pathsPerRun> pathsInRun_LeftBottomUp = {
-        PathDirection::PosX,
+        PathDirection::NegX,
         PathDirection::NegY,
         PathDirection::PosX_NegY,
         PathDirection::NegX_NegY
@@ -70,8 +70,12 @@ public:
 		cols{ cols_ },
 		getCost{ getCost_ },
 		isLeftImageBase(isLeftImageBase_),
-		paths{rows, cols, pathsCount},
-		bestPathsCosts{rows, cols, pathsCount}
+		paths{rows_, cols_, pathsCount},
+		bestPathsCosts{rows_, cols_, pathsCount}
+    {
+    }
+
+    void init()
     {
         createBorderPaths();
         initBorderPixelGetters();
@@ -86,7 +90,7 @@ public:
 
     int getDispRange(Point2 pixel)
     {
-        return isLeftImageBase ? pixel.x : cols - 1 - pixel.x;
+        return isLeftImageBase ? pixel.x + 1 : cols - pixel.x;
     }
 
     SgmPath* getPath(Point2 pixel, int pathNum) const
@@ -180,7 +184,7 @@ private:
                 path->imageWidth = cols;
                 path->startPixel = borderPixel;
                 path->length = rows + cols;
-                path->lastStepCosts = new double[cols + 1]; // Need cols + 1 for convinent bottom-up run
+                path->lastStepCosts.resize(cols + 1); // Need cols + 1 for convinent bottom-up run
                 path->init();
 
                 findInitialCostOnPath(path, i);

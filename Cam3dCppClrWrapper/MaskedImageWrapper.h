@@ -11,10 +11,12 @@ namespace Cam3dWrapper
 	public ref class MaskedImageWrapper : public Wrapper<cam3d::MaskedImage<ImageT>>
 	{
 	public:
-		MaskedImageWrapper(Wrapper<ImageT>^ image_) :
-			image(image_)
+		MaskedImageWrapper(int rows_, int cols_, Wrapper<ImageT>^ image_) :
+			rows{ rows_ },
+			cols{ cols_ },
+			image{ image_ }
 		{
-			mask = gcnew cli::array<bool, 2>(image->GetRows(), image->GetCols());
+			mask = gcnew cli::array<bool, 2>(rows, cols);
 			native = new cam3d::MaskedImage<ImageT>(*image->getNativeAs<ImageT>());
 			updateNative();
 		}
@@ -40,10 +42,10 @@ namespace Cam3dWrapper
 			Update();
 		}
 
-		void Update();
+		virtual void Update() override;
 
-		int GetRows() { return image->GetRows(); }
-		int GetCols() { return image->GetCols(); }
+		int GetRows() { return rows; }
+		int GetCols() { return cols; }
 
 	internal:
 		virtual void updateNative() override;
@@ -51,10 +53,9 @@ namespace Cam3dWrapper
 	private:
 		cli::array<bool, 2>^ mask;
 		Wrapper<ImageT>^ image;
+		int rows;
+		int cols;
 	};
-
-	using GreyMaskedImageWrapper = MaskedImageWrapper<cam3d::GreyScaleImage>;
-	using ColorMaskedImageWrapper = MaskedImageWrapper<cam3d::ColorImage>;
 
 	template<typename ImageT>
 	void MaskedImageWrapper<ImageT>::Update()
@@ -77,8 +78,20 @@ namespace Cam3dWrapper
 		{
 			for (int c = 0; c < cols; ++c)
 			{
-				matrix[r, c] = native->haveValueAt(r, c);
+				mask[r, c] = native->haveValueAt(r, c);
 			}
 		}
 	}
+	
+	public ref class GreyMaskedImageWrapper : public MaskedImageWrapper<cam3d::GreyScaleImage>
+	{
+	public:
+		GreyMaskedImageWrapper(int rows, int cols, Wrapper<cam3d::GreyScaleImage>^ image_);
+	};
+
+	public ref class ColorMaskedImageWrapper : public MaskedImageWrapper<cam3d::ColorImage>
+	{
+	public:
+		ColorMaskedImageWrapper(int rows, int cols, Wrapper<cam3d::ColorImage>^ image_);
+	};
 }

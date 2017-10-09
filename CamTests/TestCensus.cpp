@@ -12,11 +12,16 @@ public:
     static constexpr int maskSize = 1;
     static constexpr int maskLength = (maskSize + 1) * (maskSize + 1);
     using BitWord = BitWord32<maskLength / 32 + 1>;
-    using Image = GreyScaleImage<imgSize, imgSize>;
-    using Census = CensusCostComputer<GreyScaleImage<imgSize, imgSize>, BitWord>;
+    using Image = GreyScaleImage;
+    using Census = CensusCostComputer<GreyScaleImage, BitWord>;
 
     Image baseImage;
     Image matchedImage;
+
+    TestCensus32Grey() :
+        baseImage{imgSize, imgSize},
+        matchedImage{imgSize, imgSize}
+    { }
 
     void prepareTestImagesSame()
     {
@@ -51,7 +56,7 @@ public:
 
 TEST_F(TestCensus32Grey, CensusComputedCorrectlyBase)
 {
-    Census c{};
+    Census c{imgSize, imgSize};
     c.setMaskHeight(maskSize);
     c.setMaskWidth(maskSize);
     prepareTestImagesSame();
@@ -68,7 +73,7 @@ TEST_F(TestCensus32Grey, CensusComputedCorrectlyBase)
 
 TEST_F(TestCensus32Grey, CensusComputedCorrectlyMatched)
 {
-    Census c{};
+    Census c{imgSize, imgSize};
     c.setMaskHeight(maskSize);
     c.setMaskWidth(maskSize);
     prepareTestImagesDiffers();
@@ -83,7 +88,7 @@ TEST_F(TestCensus32Grey, CensusComputedCorrectlyMatched)
 
 TEST_F(TestCensus32Grey, CostComputedCorrectly)
 {
-    Census c{};
+    Census c{imgSize, imgSize};
     c.setMaskHeight(maskSize);
     c.setMaskWidth(maskSize);
     prepareTestImagesDiffers();

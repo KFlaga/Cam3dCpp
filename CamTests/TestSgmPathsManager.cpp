@@ -24,6 +24,7 @@ TEST_F(TestSgmPathsManager, CanBeCreated)
 
 TEST_F(TestSgmPathsManager, CreatesBorderPaths)
 {
+    mgr.init();
     using Dir = PathDirection;
     ASSERT_TRUE( mgr.getPath({last/2, last/2}, Dir::NegX) == nullptr );
     ASSERT_TRUE( mgr.getPath({0, 0}, Dir::PosX) != nullptr );

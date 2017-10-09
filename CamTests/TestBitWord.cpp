@@ -63,7 +63,7 @@ namespace cam3d
         BitWord bw1{};
         for(size_t i = 0; i < BitWord::lengthInWords; ++i)
         {
-            bw1.bytes[i] = (typename BitWord::uintType)-1;
+            bw1.bytes[i] = (typename BitWord::uint_t)-1;
         }
         BitWord bw2{};
         ASSERT_EQ(sizeof(BitWord) * 8 , bw1.getHammingDistance(bw2));

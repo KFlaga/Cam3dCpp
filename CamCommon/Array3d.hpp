@@ -22,7 +22,7 @@ namespace cam3d
         std::vector<T> data;
 
     public:
-        Array3d(int rows_, int cols_, int dim_) : rows{rows}, cols{cols_}, dim{dim_}
+        Array3d(int rows_, int cols_, int dim_) : rows{rows_}, cols{cols_}, dim{dim_}
         {
             data.resize(getSize());
         }

@@ -14,12 +14,12 @@ public:
 
 private:
 	Image& image;
-    Array2d<bool> mask;
+    Array2d<char> mask;
 
 public:
     MaskedImage(Image& image_) :
         image(image_),
-        mask{ }
+        mask{ image_.getRowCount(), image_.getColumnCount() }
     {
         mask.fill(false);
     }
@@ -33,8 +33,8 @@ public:
     int getRowCount() const { return image.getRowCount(); }
     int getChannelsCount() const { return image.getChannelsCount(); }
 
-    bool haveValueAt(int y, int x) { return mask(y, x); }
-    void setMaskAt(int y, int x, bool value) { mask(y, x) = value; }
+    bool haveValueAt(int y, int x) { return static_cast<bool>(mask(y, x)); }
+    void setMaskAt(int y, int x, bool value) { mask(y, x) = static_cast<char>(value); }
 
     Matrix& getMatrix() { return image.getMatrix(); }
     const Matrix& getMatrix() const { return image.getMatrix(); }

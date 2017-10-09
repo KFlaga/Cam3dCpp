@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CamCommon/Vector2.hpp>
+#include <vector>
 
 namespace cam3d
 {
@@ -34,7 +35,7 @@ public:
         return currentIndex < length - 1;
     }
 
-    double* lastStepCosts; // Needs to be allocated externally
+    std::vector<double> lastStepCosts; // Needs to be allocated externally
 
     virtual void init() = 0;
     virtual void next() = 0;
@@ -198,8 +199,8 @@ private:
 					if (length_helper::getLength2(10000, rows, cols, pixel) >=
 						length_helper::getLength2(10000, rows, cols, pixel))
 					{
-						int d = getMoveLimit1<y / 2, x / 2>(pixel, rows, cols);
-						return Point2{ pixel.y + d * (-y) / 4, pixel.x + d * (-x) };
+                        int d = getMoveLimit1<moveY / 2, moveX / 2>(pixel, rows, cols);
+                        return Point2{ pixel.y + d * (-moveY) / 4, pixel.x + d * (-moveX) };
 					}
 				}
 			};

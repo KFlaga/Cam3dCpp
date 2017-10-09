@@ -142,7 +142,7 @@
     <ClInclude Include="DisparityWrapper.h" />
     <ClInclude Include="GreyScaleImageWrapper.h" />
     <ClInclude Include="MaskedImageWrapper.h" />
-    <ClInclude Include="MatchingAlgorithmWrapper.h" />
+    <ClInclude Include="SgmMatchingAlgorithm.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Stdafx.h" />
     <ClInclude Include="Wrapper.h" />
@@ -152,7 +152,8 @@
     <ClCompile Include="ColorImageWrapper.cpp" />
     <ClCompile Include="DisparityMapWrapper.cpp" />
     <ClCompile Include="GreyScaleImageWrapper.cpp" />
-    <ClCompile Include="MatchingAlgorithmWrapper.cpp" />
+    <ClCompile Include="MaskedImageWrapper.cpp" />
+    <ClCompile Include="SgmMatchingAlgorithm.cpp" />
     <ClCompile Include="Stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

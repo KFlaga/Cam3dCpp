@@ -23,7 +23,7 @@ namespace Cam3dWrapper
 			Update();
 		}
 
-		void Update();
+		virtual void Update() override;
 
 		int GetRows() { return rows; }
 		int GetCols() { return cols; }

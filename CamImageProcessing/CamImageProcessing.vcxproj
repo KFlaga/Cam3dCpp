@@ -129,7 +129,6 @@
     <ClInclude Include="MatchConfidenceComputer.hpp" />
     <ClInclude Include="SgmCostAggregator.hpp" />
     <ClInclude Include="SgmDisparityComputer.hpp" />
-    <ClInclude Include="SgmMatchingAlgorithm.hpp" />
     <ClInclude Include="SgmPath.hpp" />
     <ClInclude Include="SgmPathsManager.hpp" />
   </ItemGroup>

@@ -81,7 +81,7 @@ namespace cam3d
         {
             for(int i = 0, size = getSize(); i < size; ++ i)
             {
-                data[i] = value();
+                data[i] = value;
             }
         }
 #endif

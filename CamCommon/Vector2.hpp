@@ -202,7 +202,7 @@ namespace cam3d
     struct Point2 : public Vector2i
     {
         constexpr Point2() : Vector2i{} { }
-        constexpr Point2(Int y, Int x) : Vector2i(x, y) { }
+        constexpr Point2(int y, int x) : Vector2i(x, y) { }
         constexpr Point2(const Vector2i& v) : Vector2i(v) { }
 
         constexpr operator const Vector2i&() const

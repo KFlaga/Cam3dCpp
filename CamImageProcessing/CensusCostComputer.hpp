@@ -2,6 +2,7 @@
 
 #include <CamCommon/Array2d.hpp>
 #include <CamImageProcessing/BorderFunction.hpp>
+#include <CamCommon/BitWord.hpp>
 #include <cstring>
 
 namespace cam3d
@@ -30,8 +31,8 @@ public:
     CensusCostComputer(int rows_, int cols_) :
         rows{rows_},
         cols{cols_},
-        censusBase{rows, cols},
-        censusMatched{rows, cols}
+        censusBase{rows_, cols_},
+        censusMatched{rows_, cols_}
     {
 
     }
