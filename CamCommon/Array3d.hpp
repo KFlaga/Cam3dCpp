@@ -43,22 +43,6 @@ namespace cam3d
         {
             return data[getIdx(p.y, p.x, d)];
         }
-        T* operator()(const int r, const int c)
-        {
-            return &data[getIdx(r, c, 0)];
-        }
-        const T* operator()(const int r, const int c) const
-        {
-            return &data[getIdx(r, c, 0)];
-        }
-        T* operator()(const Point2 p)
-        {
-            return &data[getIdx(p.y, p.x, 0)];
-        }
-        const T* operator()(const Point2 p) const
-        {
-            return &data[getIdx(p.y, p.x, 0)];
-        }
 
         // Fills array with default objects
         void clear()

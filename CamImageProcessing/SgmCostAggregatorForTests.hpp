@@ -7,7 +7,7 @@
 #include <CamCommon/DisparityMap.hpp>
 #include <CamImageProcessing/CensusCostComputer.hpp>
 #include <CamImageProcessing/SgmPathsManager.hpp>
-#include <CamImageProcessing/SgmDisparityComputer.hpp>
+#include <CamImageProcessing/SgmDisparityComputerForTests.hpp>
 #include <stdexcept>
 #include <atomic>
 
@@ -43,7 +43,7 @@ class SgmCostAggregatorForTests : public ISgmCostAggregator
 public:
     using Image = Image_;
 	using CostComputer = CostComputer_;
-	using DisparityComputer = SgmDisparityComputer<Image, CostComputer>;
+    using DisparityComputer = SgmDisparityComputerForTests<Image, CostComputer>;
     static constexpr int pathsCount = SgmPathsManager::pathsCount;
 
 private:
@@ -85,7 +85,8 @@ public:
         pathMgr{rows_, cols_, [this](Point2 p1, Point2 p2){ return this->getCost(p1, p2); }, isLeftImageBase},
         costComp{rows_, cols_},
 		dispComp{rows_, cols_, map_, imageBase_, imageMatched_, costComp},
-		currentState{"NotRun"}
+        currentState{"NotRun"},
+        allPathsCosts{rows_, cols_, pathsCount}
     {
 
     }
@@ -201,7 +202,10 @@ public:
                 bestCost = cost;
                 bestDisp = d;
             }
+
+            allPathsCosts(path->currentPixel, pathIdx).disp.push_back({cost, d});
         }
+        allPathsCosts(path->currentPixel, pathIdx).length = path->currentIndex + 1;
         pathMgr.setBestPathCosts(path->currentPixel, pathIdx, {bestCost, bestDisp});
         std::copy(thisStepCosts.begin(), thisStepCosts.end(), path->lastStepCosts.begin());
     }
@@ -249,11 +253,6 @@ public:
 
     double findPenaltyClose(SgmPath* path, int d, int dmax)
     {
-        // TODO: profile and check if removing those 2 checks will speed it a bit
-        //  it can be removed in 2 ways:
-        //  1) make separate findCostForDisparity functions for d=0 and d=max-1
-        //  2) enlarge lastStepCosts and move 1 left, so that we iterate from d=1 to d=max and
-        //     on boundaries cost is max
         if(d == 0) { return path->lastStepCosts[d + 1]; }
         if(d > dmax - 2) /* orginal : if(d > _dispRange - 2) */ { return path->lastStepCosts[d - 1]; }
         return std::min(path->lastStepCosts[d + 1], path->lastStepCosts[d - 1]);
@@ -327,13 +326,51 @@ public:
                     int dx = pathMgr.getBestPathCosts(currentPixel, i).disparity * (isLeftImageBase ? -1 : 1);
                     matched.x = currentPixel.x + dx;
                     double matchCost = getCost(currentPixel, matched);
+                    double conf = findConfidenceForPixel(currentPixel, i);
                     dispComp.storeDisparity(Disparity{
-                        dx, Disparity::Valid, static_cast<double>(dx), matchCost, 0.0
+                        dx, Disparity::Valid, static_cast<double>(dx), matchCost, conf
                     });
                 }
                 dispComp.finalizeForPixel(currentPixel);
             }
         }
+    }
+
+    struct PixelPathInfo
+    {
+        int length;
+        std::vector<DisparityCost> disp;
+    };
+
+    Array3d<PixelPathInfo> allPathsCosts;
+
+    double findConfidenceForPixel(Point2 pixel, int pathIdx)
+    {
+        std::vector<DisparityCost> disparitiesForPixel = allPathsCosts(pixel, pathIdx).disp;
+        int length = allPathsCosts(pixel, pathIdx).length;
+        // Find few best disparities
+        int bestCount = 4;
+        // For border pixels:
+        bestCount = std::min(4, getDispRange(pixel));
+        double conf = 1.0;
+        double coeff = 0.5;
+        double dispMax = cols;
+        double expCoeff = 0;
+
+        std::sort(disparitiesForPixel.begin(), disparitiesForPixel.end(),
+                  [](DisparityCost left, DisparityCost right) {
+            return left.cost < right.cost;
+        });
+
+        for(int i = 1; i < bestCount; ++i)
+        {
+            double e =  (1.0 / bestCount) * coeff *
+                    (disparitiesForPixel[0].cost / disparitiesForPixel[i].cost) *
+                    std::exp(expCoeff * std::abs(disparitiesForPixel[0].disparity - disparitiesForPixel[i].disparity) / dispMax );
+            conf -= e;
+        }
+
+        return std::max(0.0, conf);
     }
 };
 

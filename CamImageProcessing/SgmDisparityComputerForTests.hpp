@@ -164,7 +164,7 @@ protected:
 
     double findConfidence(int count, double cost)
     {
-        return ((double)count / (double)idx) * (1.0 / (cost + 1.0));
+        return ((double)count / (double)idx);
     }
 
     double findMean_Simple(int start, int count)
@@ -182,7 +182,7 @@ protected:
         double mean = 0.0, wsum = 0.0, w = 0.0;
         for(int i = 0; i < count; ++i)
         {
-            w = 1.0 / (dispForPixel[start + i].cost + 1.0);
+            w = 1.0 / (dispForPixel[start + i].confidence + 1.0);
             wsum += w;
             mean += w * dispForPixel[start + i].dx;
         }
@@ -200,7 +200,7 @@ protected:
         for(int i = 0; i < count; ++i)
         {
             w = std::min(1.0, pathLength * pathLengthTreshold) /
-                (dispForPixel[start + i].cost + 1.0);
+                (dispForPixel[start + i].confidence + 1.0);
             wsum += w;
             mean += w * dispForPixel[start + i].dx;
         }

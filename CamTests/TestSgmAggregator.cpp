@@ -9,7 +9,7 @@ namespace cam3d
 class TestSgmAggregator : public ::testing::Test
 {
 public:
-    static constexpr int imgSize = 40;
+    static constexpr int imgSize = 20;
     static constexpr int last = imgSize - 1;
     static constexpr int bitwordLength = 1;
     static constexpr int maskRadius = 2;
@@ -44,7 +44,7 @@ public:
         params.lowPenaltyCoeff = 0.02;
         params.highPenaltyCoeff = 0.04;
         params.gradientCoeff = 0.0;
-        params.disparityMeanMethod = MeanMethod::SimpleAverage;
+        params.disparityMeanMethod = MeanMethod::WeightedAverage;
         params.disparityCostMethod = CostMethod::DistanceToMean;
         params.diparityPathLengthThreshold = 1.0;
 
@@ -100,6 +100,13 @@ TEST_F(TestSgmAggregator, NoiseImageShift)
     sgm.computeMatchingCosts(prepareParams());
 
     int matches = 0;
+    int trueNegatives = 0;
+    int truePositives = 0;
+    int falseNegatives = 0;
+    int falsePositives = 0;
+    int falseNegatives2 = 0;
+    int falsePositives2 = 0;
+    double tc = 0.55;
     auto map = sgm.getDisparityMap();
     for(int d = 0; d < imgSize / patchSize; ++d)
     {
@@ -115,12 +122,39 @@ TEST_F(TestSgmAggregator, NoiseImageShift)
                     if(dact == -d)
                     {
                         ++matches;
+                        if( map(y, x).confidence > tc )
+                        {
+                            ++truePositives;
+                        }
+                        else
+                        {
+                            ++falseNegatives;
+                        }
+                    }
+                    else
+                    {
+                        // Expected low confidence / high cost match
+                        if( map(y, x).confidence > tc )
+                        {
+                            ++falsePositives;
+                        }
+                        else
+                        {
+                            ++falseNegatives2;
+                        }
                     }
                     // EXPECT_EQ(-d, dact);
                 }
                 else
                 {
-                    // Expected low confidence / high cost match
+                    if( map(y, x).confidence > tc )
+                    {
+                        ++falsePositives2;
+                    }
+                    else
+                    {
+                        ++trueNegatives;
+                    }
                 }
             }
         }

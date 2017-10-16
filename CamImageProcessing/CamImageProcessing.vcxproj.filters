@@ -39,9 +39,6 @@
     <ClInclude Include="SgmDisparityComputer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SgmMatchingAlgorithm.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SgmPath.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
